@@ -1,0 +1,36 @@
+# Project Setup Guide
+
+## 📦 Frontend (React + Vite + TypeScript)
+
+### 🔧 Installed Libraries
+Make sure to install the required dependencies before running the project:
+
+```bash
+cd app
+npm i react-router-dom
+```
+
+### 🚀 Running the Frontend
+Navigate to the app directory and start the development server:
+
+```bash
+cd app
+npm run dev
+```
+
+---
+
+## 🔙 Backend (Python + Flask)
+
+### 🚀 Running the Backend
+Navigate to the backend app directory and run the Flask server:
+
+```bash
+cd backend/src/app
+flask --app app run
+```
+
+---
+
+Let me know if you face any issues!
+```
