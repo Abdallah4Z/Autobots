@@ -1,3 +1,4 @@
+
 import { GoogleOAuthProvider } from "@react-oauth/google"
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { BadRequestPage } from "./pages/errors/BadRequestPage"
@@ -9,8 +10,9 @@ import Login from "./pages/Login"
 import Signup from "./pages/Signup"
 import ContactPage from "./pages/ContactPage"
 
-function App() {
 
+
+function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     <Router>
@@ -33,4 +35,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
