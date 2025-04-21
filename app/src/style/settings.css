@@ -1,0 +1,47 @@
+.modal-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50vw;  /* 80% of the viewport width */
+    height: 68vh;
+    background-color: rgba(51, 45, 45, 0.795);
+    padding: 4px;
+    box-shadow: 40px;
+    display: flex;
+
+}
+.nav-container {
+width: 220px;
+background-color: #1c1c1c; 
+padding-top: 20px;
+font-family: 'Roboto', sans-serif; 
+font-size: 160px;
+user-select: none; 
+
+}
+
+.content-container {
+    flex: 1;
+    padding: 16px;
+    background-color: #333333; /* Set a different background color for the right side */
+}
+.nav-container .MuiListItem-root {
+    box-sizing: border-box; 
+    border: 1px solid transparent;  /* Reserve space for the border */
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  
+  .nav-container .MuiListItem-root:hover,
+  .nav-container .Mui-selectedItem {
+    background-color: #444444;
+    color: #ffffff;
+    border-radius: 5px;
+    border: 1px solid #ffffff; /* This now doesn't change overall size */
+  }
+.nav-container .MuiListItemText-primary {
+font-size: 20px;  
+font-weight: bold; 
+color: #ffffff;  
+}

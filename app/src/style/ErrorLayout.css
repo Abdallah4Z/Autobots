@@ -1,0 +1,80 @@
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .error-content {
+    max-width: 500px;
+  }
+  
+  .error-code {
+    font-size: 5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .error-title {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .error-message {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .error-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  
+  .error-button.primary {
+    background-color: #d32f2f;
+    color: white;
+  }
+  
+  .error-button.primary:hover {
+    background-color: #b71c1c;
+  }
+  
+  .error-button.secondary {
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
+  }
+  
+  .error-button.secondary:hover {
+    background-color: #ffebee;
+  }
+  
+  /* Mobile responsiveness */
+  @media (max-width: 600px) {
+    .error-code {
+      font-size: 3rem;
+    }
+    
+    .error-title {
+      font-size: 1.5rem;
+    }
+    
+    .error-actions {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
