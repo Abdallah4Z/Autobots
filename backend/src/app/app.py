@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import networkx as nx
 import pandas as pd
 import matplotlib
@@ -9,10 +10,8 @@ import base64
 import json
 
 class CairoTransportationGraph:
-    # The full class implementation from before goes here
-    # I've abbreviated it to focus on the Flask integration
     def __init__(self):
-        self.nodes = {}
+        self.nodes = {}  # Maps ID to node data
         self.existing_roads = []
         self.potential_roads = []
         self.metro_lines = []
@@ -23,101 +22,117 @@ class CairoTransportationGraph:
     def load_from_csv(self, neighborhoods_file, facilities_file, existing_roads_file, 
                       potential_roads_file, traffic_file, metro_file, bus_file, demand_file):
         """Load all data from CSV files"""
-        try:
-            # Load neighborhood data
-            neighborhoods_df = pd.read_csv(neighborhoods_file)
-            for _, row in neighborhoods_df.iterrows():
-                self.nodes[row['id']] = {
-                    'name': row['name'],
-                    'type': row['type'],
-                    'x': row['x'],
-                    'y': row['y'],
-                    'population': row['population'],
-                    'is_facility': False
-                }
-            
-            # Load facilities data
-            facilities_df = pd.read_csv(facilities_file)
-            for _, row in facilities_df.iterrows():
-                self.nodes[row['id']] = {
-                    'name': row['name'],
-                    'type': row['type'],
-                    'x': row['x'],
-                    'y': row['y'],
-                    'is_facility': True
-                }
-            
-            # Load existing roads data
-            roads_df = pd.read_csv(existing_roads_file)
-            for _, row in roads_df.iterrows():
-                self.existing_roads.append((
-                    row['from_id'],
-                    row['to_id'],
-                    row['distance_km'],
-                    row['capacity'],
-                    row['condition']
-                ))
-            
-            # Load potential roads data
-            potential_df = pd.read_csv(potential_roads_file)
-            for _, row in potential_df.iterrows():
-                self.potential_roads.append((
-                    row['from_id'],
-                    row['to_id'],
-                    row['distance_km'],
-                    row['capacity'],
-                    row['construction_cost']
-                ))
-            
-            # Load traffic data
-            traffic_df = pd.read_csv(traffic_file)
-            for _, row in traffic_df.iterrows():
-                road_key = (row['from_id'], row['to_id'])
-                if road_key not in self.traffic_data:
-                    self.traffic_data[road_key] = {}
-                self.traffic_data[road_key][row['time_of_day']] = row['volume']
-            
-            # Load metro lines data
-            metro_df = pd.read_csv(metro_file)
-            for _, row in metro_df.iterrows():
-                self.metro_lines.append((
-                    row['line_id'],
-                    row['from_id'],
-                    row['to_id'],
-                    row['travel_time_minutes']
-                ))
-            
-            # Load bus routes data
-            bus_df = pd.read_csv(bus_file)
-            for _, row in bus_df.iterrows():
-                self.bus_routes.append((
-                    row['route_id'],
-                    row['from_id'],
-                    row['to_id'],
-                    row['travel_time_minutes']
-                ))
-            
-            # Load transport demand data
-            demand_df = pd.read_csv(demand_file)
-            for _, row in demand_df.iterrows():
-                demand_key = (row['from_id'], row['to_id'])
-                self.transport_demand[demand_key] = row['daily_trips']
-            
-            print(f"Successfully loaded data with {len(self.nodes)} nodes and {len(self.existing_roads)} existing roads.")
-        except Exception as e:
-            print(f"Error loading data: {e}")
         
-    # All other methods from before go here
+        # Load neighborhoods and districts
+        neighborhoods_df = pd.read_csv(neighborhoods_file)
+        for _, row in neighborhoods_df.iterrows():
+            self.nodes[row['ID']] = {
+                'name': row['Name'],
+                'population': row['Population'],
+                'type': row['Type'],
+                'x': row['X-coordinate'],
+                'y': row['Y-coordinate'],
+                'is_facility': False
+            }
+            
+        # Load facilities
+        facilities_df = pd.read_csv(facilities_file)
+        for _, row in facilities_df.iterrows():
+            self.nodes[row['ID']] = {
+                'name': row['Name'],
+                'type': row['Type'],
+                'x': row['X-coordinate'],
+                'y': row['Y-coordinate'],
+                'is_facility': True
+            }
+            
+        # Load existing roads
+        roads_df = pd.read_csv(existing_roads_file)
+        self.existing_roads = [
+            (row['FromID'], row['ToID'], row['Distance(km)'], 
+             row['Current Capacity(vehicles/hour)'], row['Condition(1-10)']) 
+            for _, row in roads_df.iterrows()
+        ]
+        
+        # Load potential roads
+        potential_df = pd.read_csv(potential_roads_file)
+        self.potential_roads = [
+            (row['FromID'], row['ToID'], row['Distance(km)'], 
+             row['Estimated Capacity(vehicles/hour)'], row['Construction Cost(Million EGP)']) 
+            for _, row in potential_df.iterrows()
+        ]
+        
+        # Load traffic data
+        traffic_df = pd.read_csv(traffic_file)
+        for _, row in traffic_df.iterrows():
+            road_id = f"{row['FromID']}{row['ToID']}"
+            self.traffic_data[road_id] = {
+                'morning': row['Morning Peak(veh/h)'],
+                'afternoon': row['Afternoon(veh/h)'],
+                'evening': row['Evening Peak(veh/h)'],
+                'night': row['Night(veh/h)']
+            }
+            
+        # Load metro lines
+        metro_df = pd.read_csv(metro_file)
+        self.metro_lines = [
+            (row['LineID'], row['Name'], row['Stations(comma-separated IDs)'], row['Daily Passengers']) 
+            for _, row in metro_df.iterrows()
+        ]
+        
+        # Load bus routes
+        bus_df = pd.read_csv(bus_file)
+        self.bus_routes = [
+            (row['RouteID'], row['Stops(comma-separated IDs)'], 
+             row['Buses Assigned'], row['Daily Passengers']) 
+            for _, row in bus_df.iterrows()
+        ]
+        
+        # Load transport demand
+        demand_df = pd.read_csv(demand_file)
+        for _, row in demand_df.iterrows():
+            from_id, to_id = row['FromID'], row['ToID']
+            key = f"{from_id}_{to_id}"
+            self.transport_demand[key] = row['Daily Passengers']
+    
+    def build_networkx_graph(self, include_potential=False):
+        """Create a NetworkX graph from the loaded data"""
+        G = nx.Graph()
+        
+        # Add nodes
+        for node_id, data in self.nodes.items():
+            G.add_node(node_id, **data)
+            
+        # Add existing roads as edges
+        for road in self.existing_roads:
+            from_id, to_id, distance, capacity, condition = road
+            G.add_edge(from_id, to_id, 
+                       distance=distance, 
+                       capacity=capacity, 
+                       condition=condition,
+                       type='existing')
+            
+        # Add potential roads if requested
+        if include_potential:
+            for road in self.potential_roads:
+                from_id, to_id, distance, capacity, cost = road
+                G.add_edge(from_id, to_id, 
+                           distance=distance, 
+                           capacity=capacity, 
+                           cost=cost,
+                           type='potential')
+                
+        return G
     
     def get_graph_image_base64(self, include_potential=False):
         """Return the graph visualization as a base64 encoded image"""
         plt.figure(figsize=(12, 10))
         G = self.build_networkx_graph(include_potential)
         
-        # Create visualization (similar to visualize() method)
+        # Create visualization
         pos = {node: (self.nodes[node]['x'], self.nodes[node]['y']) for node in G.nodes()}
         
-        # Draw nodes with different colors (abbreviated code)
+        # Draw nodes with different colors
         residential = [n for n in G.nodes() if not self.nodes[n]['is_facility'] and self.nodes[n]['type'] == 'Residential']
         business = [n for n in G.nodes() if not self.nodes[n]['is_facility'] and self.nodes[n]['type'] == 'Business']
         mixed = [n for n in G.nodes() if not self.nodes[n]['is_facility'] and self.nodes[n]['type'] == 'Mixed']
@@ -160,7 +175,8 @@ class CairoTransportationGraph:
     def get_all_nodes_json(self):
         """Return all nodes as JSON for the frontend"""
         return {
-            node_id: {
+            str(node_id): {
+                'id': node_id,
                 'name': data['name'],
                 'type': data['type'],
                 'x': data['x'],
@@ -177,6 +193,7 @@ class CairoTransportationGraph:
         # Add existing roads
         for from_id, to_id, distance, capacity, condition in self.existing_roads:
             edges.append({
+                'id': f"{from_id}_{to_id}",
                 'from': from_id,
                 'to': to_id,
                 'distance': distance,
@@ -189,6 +206,7 @@ class CairoTransportationGraph:
         if include_potential:
             for from_id, to_id, distance, capacity, cost in self.potential_roads:
                 edges.append({
+                    'id': f"{from_id}_{to_id}_potential",
                     'from': from_id,
                     'to': to_id,
                     'distance': distance,
@@ -198,34 +216,197 @@ class CairoTransportationGraph:
                 })
         
         return edges
+        
+    def find_shortest_path(self, start_id, end_id, weight='distance'):
+        """Find shortest path between two nodes based on specified weight."""
+        G = self.build_networkx_graph()
+        
+        try:
+            path = nx.shortest_path(G, source=start_id, target=end_id, weight=weight)
+            distance = nx.shortest_path_length(G, source=start_id, target=end_id, weight=weight)
+            
+            # Get the names of locations in the path
+            path_names = [self.nodes[node_id]['name'] for node_id in path]
+            
+            return {
+                'path': path,
+                'path_names': path_names,
+                'distance': distance
+            }
+        except nx.NetworkXNoPath:
+            return None
+    
+    def analyze_traffic_congestion(self, time_of_day='morning'):
+        """Analyze traffic congestion based on time of day."""
+        G = self.build_networkx_graph()
+        congestion_ratios = {}
+        
+        for from_id, to_id, _, capacity, _ in self.existing_roads:
+            road_id = f"{from_id}{to_id}"
+            
+            if road_id in self.traffic_data:
+                current_traffic = self.traffic_data[road_id][time_of_day]
+                congestion_ratio = current_traffic / capacity
+                congestion_ratios[(from_id, to_id)] = congestion_ratio
+                
+        return congestion_ratios
+    
+    def suggest_public_transport_improvements(self):
+        """Suggest improvements based on demand and current transport."""
+        # Find high-demand routes without good public transport
+        suggestions = []
+        
+        for demand_key, passengers in self.transport_demand.items():
+            from_id, to_id = demand_key.split('_')
+            
+            # Check if this route has metro coverage
+            has_metro = False
+            for line_id, name, stations, _ in self.metro_lines:
+                station_list = stations.replace('"', '').split(',')
+                if from_id in station_list and to_id in station_list:
+                    has_metro = True
+                    break
+            
+            # Check if this route has bus coverage
+            has_bus = False
+            for route_id, stops, _, _ in self.bus_routes:
+                stop_list = stops.replace('"', '').split(',')
+                if from_id in stop_list and to_id in stop_list:
+                    has_bus = True
+                    break
+            
+            # If high demand but no good public transport, suggest improvement
+            if passengers > 15000 and not (has_metro or has_bus):
+                suggestions.append({
+                    'from': self.nodes[from_id]['name'],
+                    'to': self.nodes[to_id]['name'],
+                    'demand': passengers,
+                    'suggestion': 'New bus route' if passengers < 20000 else 'Consider metro extension'
+                })
+                
+        return suggestions
+
+    def compute_travel_time(self, start_id, end_id, time_of_day='morning', speed_factor=1.0):
+        """Compute estimated travel time between two points based on distance and traffic."""
+        G = self.build_networkx_graph()
+        
+        # Set travel time as edge weight based on distance and traffic
+        for u, v, data in G.edges(data=True):
+            distance = data['distance']
+            # Base speed in km/h - adjust based on road condition
+            base_speed = 50 * (data['condition'] / 10)
+            
+            # Check if we have traffic data for this road
+            road_id = f"{u}{v}"
+            if road_id in self.traffic_data:
+                traffic = self.traffic_data[road_id][time_of_day]
+                capacity = data['capacity']
+                # Traffic factor: reduces speed when congested
+                traffic_factor = max(0.2, 1 - (traffic / capacity))
+            else:
+                # Default traffic factor if no data
+                traffic_factor = 0.8
+                
+            # Calculate time in minutes
+            time = (distance / (base_speed * traffic_factor * speed_factor)) * 60
+            G[u][v]['time'] = time
+        
+        # Find path with lowest travel time
+        try:
+            path = nx.shortest_path(G, source=start_id, target=end_id, weight='time')
+            total_time = sum(G[path[i]][path[i+1]]['time'] for i in range(len(path)-1))
+            
+            return {
+                'path': path,
+                'path_names': [self.nodes[node_id]['name'] for node_id in path],
+                'total_time_minutes': total_time,
+                'total_distance_km': sum(G[path[i]][path[i+1]]['distance'] for i in range(len(path)-1))
+            }
+        except nx.NetworkXNoPath:
+            return None
+
+    def get_population_density_map(self):
+        """Create a population density map of the areas."""
+        density_data = {}
+        
+        for node_id, data in self.nodes.items():
+            if not data['is_facility'] and 'population' in data:
+                density_data[node_id] = {
+                    'name': data['name'],
+                    'population': data['population'],
+                    'x': data['x'],
+                    'y': data['y']
+                }
+        
+        return density_data
+    
+    def get_metro_lines_json(self):
+        """Return metro lines in JSON format for the frontend"""
+        result = []
+        for line_id, name, stations, passengers in self.metro_lines:
+            station_ids = stations.replace('"', '').split(',')
+            station_names = [self.nodes[station_id]['name'] for station_id in station_ids if station_id in self.nodes]
+            result.append({
+                'id': line_id,
+                'name': name,
+                'stations': station_ids,
+                'station_names': station_names,
+                'daily_passengers': passengers
+            })
+        return result
+    
+    def get_bus_routes_json(self):
+        """Return bus routes in JSON format for the frontend"""
+        result = []
+        for route_id, stops, buses, passengers in self.bus_routes:
+            stop_ids = stops.replace('"', '').split(',')
+            stop_names = [self.nodes[stop_id]['name'] for stop_id in stop_ids if stop_id in self.nodes]
+            result.append({
+                'id': route_id,
+                'stops': stop_ids,
+                'stop_names': stop_names,
+                'buses_assigned': buses,
+                'daily_passengers': passengers
+            })
+        return result
 
 # Initialize Flask application
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Create and load the graph (do this at startup)
 cairo_graph = CairoTransportationGraph()
 
-@app.route('/')
-def index():
-    """Render the main page"""
-    # Get the graph visualization
+@app.route('/api/graph_data')
+def graph_data():
+    """Return graph data in JSON format for interactive frontend visualization"""
     include_potential = request.args.get('potential', 'false').lower() == 'true'
-    graph_image = cairo_graph.get_graph_image_base64(include_potential=include_potential)
     
-    # Get all node names for the dropdown selection
-    node_options = []
-    for node_id, data in cairo_graph.nodes.items():
-        node_options.append({
-            'id': node_id,
-            'name': data['name'],
-            'type': data['type']
-        })
-    
-    return render_template('index.html', 
-                           graph_image=graph_image, 
-                           node_options=sorted(node_options, key=lambda x: x['name']))
+    return jsonify({
+        'nodes': cairo_graph.get_all_nodes_json(),
+        'edges': cairo_graph.get_all_edges_json(include_potential)
+    })
 
-@app.route('/find_path', methods=['POST'])
+@app.route('/api/graph_image')
+def graph_image():
+    """Return a base64 encoded image of the graph"""
+    include_potential = request.args.get('potential', 'false').lower() == 'true'
+    image_base64 = cairo_graph.get_graph_image_base64(include_potential)
+    
+    return jsonify({
+        'success': True,
+        'image': image_base64
+    })
+
+@app.route('/api/nodes')
+def get_nodes():
+    """Return all node data for dropdowns and selections"""
+    return jsonify({
+        'success': True,
+        'nodes': cairo_graph.get_all_nodes_json()
+    })
+
+@app.route('/api/find_path', methods=['POST'])
 def find_path():
     """API endpoint to find paths between locations"""
     data = request.get_json()
@@ -233,6 +414,12 @@ def find_path():
     end_id = data.get('end_id')
     mode = data.get('mode', 'distance')  # 'distance' or 'time'
     time_of_day = data.get('time_of_day', 'morning')
+    
+    # Convert string IDs to correct type if needed
+    if isinstance(start_id, str) and start_id.isdigit():
+        start_id = int(start_id)
+    if isinstance(end_id, str) and end_id.isdigit():
+        end_id = int(end_id)
     
     if mode == 'distance':
         path_result = cairo_graph.find_shortest_path(start_id, end_id)
@@ -245,7 +432,10 @@ def find_path():
             'path': path_result['path'],
             'path_names': path_result['path_names'],
             'distance': path_result.get('distance', path_result.get('total_distance_km')),
-            'time': path_result.get('total_time_minutes', None)
+            'time': path_result.get('total_time_minutes', None),
+            # Include edge IDs for highlighting in the UI
+            'edges': [f"{path_result['path'][i]}_{path_result['path'][i+1]}" 
+                     for i in range(len(path_result['path'])-1)]
         })
     else:
         return jsonify({
@@ -253,7 +443,7 @@ def find_path():
             'message': 'No path found between these locations'
         })
 
-@app.route('/traffic_analysis')
+@app.route('/api/traffic_analysis')
 def traffic_analysis():
     """API endpoint for traffic congestion analysis"""
     time_of_day = request.args.get('time', 'morning')
@@ -272,7 +462,8 @@ def traffic_analysis():
             'from_name': from_name,
             'to_name': to_name,
             'ratio': ratio,
-            'level': congestion_level
+            'level': congestion_level,
+            'edge_id': f"{from_id}_{to_id}"
         })
     
     return jsonify({
@@ -281,7 +472,7 @@ def traffic_analysis():
         'results': sorted(results, key=lambda x: x['ratio'], reverse=True)
     })
 
-@app.route('/transport_suggestions')
+@app.route('/api/transport_suggestions')
 def transport_suggestions():
     """API endpoint for public transport improvement suggestions"""
     suggestions = cairo_graph.suggest_public_transport_improvements()
@@ -290,289 +481,83 @@ def transport_suggestions():
         'suggestions': suggestions
     })
 
-@app.route('/graph_data')
-def graph_data():
-    """Return graph data in JSON format for interactive frontend visualization"""
-    include_potential = request.args.get('potential', 'false').lower() == 'true'
-    
+@app.route('/api/metro_lines')
+def metro_lines():
+    """Return metro line data"""
     return jsonify({
-        'nodes': cairo_graph.get_all_nodes_json(),
-        'edges': cairo_graph.get_all_edges_json(include_potential)
+        'success': True,
+        'lines': cairo_graph.get_metro_lines_json()
     })
 
-# Example HTML template (index.html) - would be placed in a templates folder
-@app.route('/get_template')
-def get_template():
-    """This is just to show the template content, not for actual use"""
-    template = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Cairo Transportation Network</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
-        <style>
-            #map-container {
-                border: 1px solid #ddd;
-                margin-bottom: 20px;
+@app.route('/api/bus_routes')
+def bus_routes():
+    """Return bus route data"""
+    return jsonify({
+        'success': True,
+        'routes': cairo_graph.get_bus_routes_json()
+    })
+
+@app.route('/api/population_density')
+def population_density():
+    """Return population density data"""
+    return jsonify({
+        'success': True,
+        'density': cairo_graph.get_population_density_map()
+    })
+
+@app.route('/api/statistics')
+def statistics():
+    """Return general network statistics"""
+    G = cairo_graph.build_networkx_graph(include_potential=False)
+    
+    total_population = sum(data.get('population', 0) for _, data in cairo_graph.nodes.items() 
+                          if not data['is_facility'] and 'population' in data)
+    
+    residential_areas = len([n for n in cairo_graph.nodes.values() 
+                            if not n['is_facility'] and n['type'] == 'Residential'])
+    
+    business_areas = len([n for n in cairo_graph.nodes.values() 
+                         if not n['is_facility'] and n['type'] == 'Business'])
+    
+    mixed_areas = len([n for n in cairo_graph.nodes.values() 
+                      if not n['is_facility'] and n['type'] == 'Mixed'])
+    
+    facilities = len([n for n in cairo_graph.nodes.values() if n['is_facility']])
+    
+    roads = len(cairo_graph.existing_roads)
+    potential_roads = len(cairo_graph.potential_roads)
+    
+    total_road_length = sum(road[2] for road in cairo_graph.existing_roads)
+    
+    metro_lines = len(cairo_graph.metro_lines)
+    bus_routes = len(cairo_graph.bus_routes)
+    
+    return jsonify({
+        'success': True,
+        'statistics': {
+            'total_population': total_population,
+            'residential_areas': residential_areas,
+            'business_areas': business_areas,
+            'mixed_areas': mixed_areas,
+            'facilities': facilities,
+            'roads': roads,
+            'potential_roads': potential_roads,
+            'total_road_length_km': total_road_length,
+            'metro_lines': metro_lines,
+            'bus_routes': bus_routes,
+            'connectivity': {
+                'average_degree': sum(dict(G.degree()).values()) / G.number_of_nodes(),
+                'density': nx.density(G),
+                'connected': nx.is_connected(G),
+                'components': nx.number_connected_components(G)
             }
-            .results-container {
-                max-height: 400px;
-                overflow-y: auto;
-                border: 1px solid #ddd;
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container mt-4">
-            <h1>Cairo Transportation Network</h1>
-            
-            <div class="row">
-                <div class="col-md-8">
-                    <div id="map-container">
-                        <img src="data:image/png;base64,{{ graph_image }}" class="img-fluid" alt="Cairo Transportation Network">
-                    </div>
-                    
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="show-potential" 
-                            {% if request.args.get('potential') == 'true' %}checked{% endif %}>
-                        <label class="form-check-label" for="show-potential">
-                            Show Potential Future Roads
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="col-md-4">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            Find Route
-                        </div>
-                        <div class="card-body">
-                            <form id="path-form">
-                                <div class="mb-3">
-                                    <label for="start-location" class="form-label">Start Location</label>
-                                    <select class="form-select" id="start-location" required>
-                                        <option value="">Select location...</option>
-                                        {% for node in node_options %}
-                                        <option value="{{ node.id }}">{{ node.name }} ({{ node.type }})</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="end-location" class="form-label">End Location</label>
-                                    <select class="form-select" id="end-location" required>
-                                        <option value="">Select location...</option>
-                                        {% for node in node_options %}
-                                        <option value="{{ node.id }}">{{ node.name }} ({{ node.type }})</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Route Type</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="route-type" id="shortest-distance" value="distance" checked>
-                                        <label class="form-check-label" for="shortest-distance">
-                                            Shortest Distance
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="route-type" id="fastest-time" value="time">
-                                        <label class="form-check-label" for="fastest-time">
-                                            Fastest Time
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3" id="time-of-day-container" style="display:none;">
-                                    <label for="time-of-day" class="form-label">Time of Day</label>
-                                    <select class="form-select" id="time-of-day">
-                                        <option value="morning">Morning Peak</option>
-                                        <option value="afternoon">Afternoon</option>
-                                        <option value="evening">Evening Peak</option>
-                                        <option value="night">Night</option>
-                                    </select>
-                                </div>
-                                
-                                <button type="submit" class="btn btn-primary">Find Route</button>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            Analysis Tools
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button id="traffic-analysis-btn" class="btn btn-outline-primary">Traffic Analysis</button>
-                                <button id="transport-suggestions-btn" class="btn btn-outline-primary">Transport Suggestions</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="results-container" id="results-container">
-                        <p class="text-muted">Select options above to see results here.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script>
-            $(document).ready(function() {
-                // Show/hide time of day selector
-                $('input[name="route-type"]').change(function() {
-                    if ($(this).val() === 'time') {
-                        $('#time-of-day-container').show();
-                    } else {
-                        $('#time-of-day-container').hide();
-                    }
-                });
-                
-                // Show potential roads checkbox
-                $('#show-potential').change(function() {
-                    const checked = $(this).is(':checked');
-                    window.location.href = '/?potential=' + checked;
-                });
-                
-                // Find path form submission
-                $('#path-form').submit(function(e) {
-                    e.preventDefault();
-                    const startId = $('#start-location').val();
-                    const endId = $('#end-location').val();
-                    const mode = $('input[name="route-type"]:checked').val();
-                    const timeOfDay = $('#time-of-day').val();
-                    
-                    $.ajax({
-                        url: '/find_path',
-                        method: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
-                            start_id: startId,
-                            end_id: endId,
-                            mode: mode,
-                            time_of_day: timeOfDay
-                        }),
-                        success: function(response) {
-                            if (response.success) {
-                                let resultsHtml = '<h4>Route Found</h4>';
-                                resultsHtml += '<p>From <strong>' + response.path_names[0] + '</strong> to <strong>' + 
-                                              response.path_names[response.path_names.length - 1] + '</strong></p>';
-                                
-                                resultsHtml += '<p><strong>Path:</strong> ' + response.path_names.join(' → ') + '</p>';
-                                resultsHtml += '<p><strong>Total Distance:</strong> ' + response.distance.toFixed(1) + ' km</p>';
-                                
-                                if (response.time !== null) {
-                                    resultsHtml += '<p><strong>Estimated Travel Time:</strong> ' + response.time.toFixed(1) + ' minutes</p>';
-                                }
-                                
-                                $('#results-container').html(resultsHtml);
-                            } else {
-                                $('#results-container').html('<div class="alert alert-warning">' + response.message + '</div>');
-                            }
-                        },
-                        error: function() {
-                            $('#results-container').html('<div class="alert alert-danger">Error finding route. Please try again.</div>');
-                        }
-                    });
-                });
-                
-                // Traffic analysis button
-                $('#traffic-analysis-btn').click(function() {
-                    const timeOfDay = $('#time-of-day').val() || 'morning';
-                    
-                    $.ajax({
-                        url: '/traffic_analysis',
-                        method: 'GET',
-                        data: {
-                            time: timeOfDay
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                let resultsHtml = '<h4>Traffic Congestion Analysis - ' + 
-                                    timeOfDay.charAt(0).toUpperCase() + timeOfDay.slice(1) + '</h4>';
-                                
-                                resultsHtml += '<table class="table table-striped">';
-                                resultsHtml += '<thead><tr><th>From</th><th>To</th><th>Congestion Level</th><th>Ratio</th></tr></thead>';
-                                resultsHtml += '<tbody>';
-                                
-                                response.results.forEach(function(item) {
-                                    let rowClass = '';
-                                    if (item.level === 'High') rowClass = 'table-danger';
-                                    else if (item.level === 'Medium') rowClass = 'table-warning';
-                                    
-                                    resultsHtml += '<tr class="' + rowClass + '">';
-                                    resultsHtml += '<td>' + item.from_name + '</td>';
-                                    resultsHtml += '<td>' + item.to_name + '</td>';
-                                    resultsHtml += '<td>' + item.level + '</td>';
-                                    resultsHtml += '<td>' + item.ratio.toFixed(2) + '</td>';
-                                    resultsHtml += '</tr>';
-                                });
-                                
-                                resultsHtml += '</tbody></table>';
-                                $('#results-container').html(resultsHtml);
-                            }
-                        },
-                        error: function() {
-                            $('#results-container').html('<div class="alert alert-danger">Error analyzing traffic. Please try again.</div>');
-                        }
-                    });
-                });
-                
-                // Transport suggestions button
-                $('#transport-suggestions-btn').click(function() {
-                    $.ajax({
-                        url: '/transport_suggestions',
-                        method: 'GET',
-                        success: function(response) {
-                            if (response.success) {
-                                let resultsHtml = '<h4>Public Transport Improvement Suggestions</h4>';
-                                
-                                if (response.suggestions.length === 0) {
-                                    resultsHtml += '<p>No suggestions found - current public transport coverage appears adequate.</p>';
-                                } else {
-                                    resultsHtml += '<table class="table table-striped">';
-                                    resultsHtml += '<thead><tr><th>From</th><th>To</th><th>Daily Demand</th><th>Suggestion</th></tr></thead>';
-                                    resultsHtml += '<tbody>';
-                                    
-                                    response.suggestions.forEach(function(item) {
-                                        resultsHtml += '<tr>';
-                                        resultsHtml += '<td>' + item.from + '</td>';
-                                        resultsHtml += '<td>' + item.to + '</td>';
-                                        resultsHtml += '<td>' + item.demand + '</td>';
-                                        resultsHtml += '<td>' + item.suggestion + '</td>';
-                                        resultsHtml += '</tr>';
-                                    });
-                                    
-                                    resultsHtml += '</tbody></table>';
-                                }
-                                
-                                $('#results-container').html(resultsHtml);
-                            }
-                        },
-                        error: function() {
-                            $('#results-container').html('<div class="alert alert-danger">Error getting suggestions. Please try again.</div>');
-                        }
-                    });
-                });
-            });
-        </script>
-    </body>
-    </html>
-    """
-    return template
+        }
+    })
 
 if __name__ == '__main__':
-    # Load your data at startup
+    # Load data from CSV files
     cairo_graph.load_from_csv(
-        neighborhoods_file="D:\\IMPORTANT DATA\\AIU Computer Engineering\\CE Year 3\\Semester 2\\CSE112 Design & Analysis of Algorithms\\Project\\backend\data\\Neighborhoods and Districts.csv", 
+        neighborhoods_file="data/neighborhoods.csv", 
         facilities_file="data/facilities.csv",
         existing_roads_file="data/existing_roads.csv",
         potential_roads_file="data/potential_roads.csv",
@@ -582,4 +567,5 @@ if __name__ == '__main__':
         demand_file="data/transport_demand.csv"
     )
     
-    app.run(debug=True)
+    # Start the Flask server
+    app.run(debug=True, port=5000)
