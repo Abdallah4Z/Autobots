@@ -1,0 +1,5 @@
+env/
+docs/
+node_modules/
+reqs.txt
+*~
