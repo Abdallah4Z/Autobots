@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 env/
 docs/
 node_modules/
 reqs.txt
 *~
+=======
+app/.env
+>>>>>>> 608eff0a874e7a6041d3a5f1cd33038a1c11c805
