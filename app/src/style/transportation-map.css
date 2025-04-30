@@ -1,0 +1,52 @@
+/* Transportation Map Styles */
+.transportation-dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.map-container {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+.map-only-container {
+  width: 100%;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Keep MapLibre controls visible */
+.maplibregl-control-container {
+  z-index: 1;
+}
+
+/* Hide any overflow */
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Coordinates display */
+.coordinates-display {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: monospace;
+  z-index: 10;
+  user-select: all; /* Makes the text easily selectable for copying */
+}
+
+.coordinates-display p {
+  margin: 0;
+  font-size: 14px;
+}

@@ -9,7 +9,7 @@ import { UnauthorizedPage } from "./pages/errors/UnauthorizedPage"
 import Login from "./pages/Login"
 import Signup from "./pages/Signup"
 import ContactPage from "./pages/ContactPage"
-
+import TransportationDashboard from "./pages/TransportationDashboard"
 
 
 function App() {
@@ -21,14 +21,12 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/contact" element={<ContactPage />} />
-
-
-        {/* Errors Routes */}
         <Route path="/400" element={<BadRequestPage />} />
         <Route path="/401" element={<UnauthorizedPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/500" element={<ServerErrorPage />} />
         <Route path="*" element={<NotFoundPage />} />
+        <Route path="/" element={<TransportationDashboard />} />
       </Routes>
     </Router>
   </GoogleOAuthProvider>
