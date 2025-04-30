@@ -1,11 +1,22 @@
 from flask import Flask
 from flask_cors import CORS
 import os
+import sys
 
-# Import our modules
-from .models.graph import CairoTransportationGraph
-from .utils.data_loader import load_data_from_csv
-from .api.routes import register_routes
+# Add the src directory to the Python path for proper imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.dirname(current_dir)
+sys.path.insert(0, src_dir)
+
+# Import our modules - use absolute imports when run directly, fallback to relative imports when imported
+if __name__ == '__main__':
+    from models.graph import CairoTransportationGraph
+    from utils.data_loader import load_data_from_csv
+    from api.routes import register_routes
+else:
+    from app.models.graph import CairoTransportationGraph
+    from app.utils.data_loader import load_data_from_csv
+    from app.api.routes import register_routes
 
 # Create an instance of the graph
 cairo_graph = CairoTransportationGraph()
@@ -16,9 +27,14 @@ CORS(app)  # Enable CORS for all routes
 
 # Define a function to initialize the application
 def initialize_app():
-    # Determine the data directory path relative to this file
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))), 'data')
+    # Correct path to the data directory - explicitly use the backend/data folder
+    project_dir_parts = current_dir.split('\\')
+    # Find the 'Project' directory in the path
+    project_idx = project_dir_parts.index('Project')
+    # Build path to the backend/data directory
+    data_dir = '\\'.join(project_dir_parts[:project_idx+1]) + '\\backend\\data'
+    
+    print(f"Looking for data files in: {data_dir}")
     
     # Load data from CSV files
     load_data_from_csv(
@@ -38,9 +54,11 @@ def initialize_app():
     
     return app
 
-# Create and initialize the application
-app = initialize_app()
-
+# Create and initialize the application when running directly
 if __name__ == '__main__':
+    app = initialize_app()
     # Start the Flask server
     app.run(debug=True, port=5000)
+else:
+    # When imported as a module, just initialize without running
+    app = initialize_app()
