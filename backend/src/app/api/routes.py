@@ -1,14 +1,31 @@
 from flask import request, jsonify
+import sys
+import os
 
-# Import all the required modules
-from ..utils.data_formatting import (
+# Add parent directories to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+api_dir = os.path.dirname(current_dir)  # app/
+app_dir = os.path.dirname(api_dir)  # src/app
+src_dir = os.path.dirname(app_dir)  # src
+backend_dir = os.path.dirname(src_dir)  # backend
+project_dir = os.path.dirname(backend_dir)  # Project
+
+# Add them to the path in reverse order to prioritize modules
+sys.path.insert(0, api_dir)
+sys.path.insert(0, app_dir)
+sys.path.insert(0, src_dir)
+sys.path.insert(0, backend_dir)
+sys.path.insert(0, project_dir)
+
+# Import the required modules directly without relative paths
+from utils.data_formatting import (
     get_all_nodes_json, get_all_edges_json, get_metro_lines_json,
     get_bus_routes_json, get_population_density_map
 )
-from ..utils.visualization import get_graph_image_base64
-from ..services.pathfinding import find_shortest_path, compute_travel_time, emergency_route_astar
-from ..services.analysis import analyze_traffic_congestion, suggest_public_transport_improvements, get_network_statistics
-from ..services.optimization import optimize_road_network_with_mst, optimize_bus_routes_dp, optimize_metro_schedule_dp
+from utils.visualization import get_graph_image_base64
+from services.pathfinding import find_shortest_path, compute_travel_time, emergency_route_astar
+from services.analysis import analyze_traffic_congestion, suggest_public_transport_improvements, get_network_statistics
+from services.optimization import optimize_road_network_with_mst, optimize_bus_routes_dp, optimize_metro_schedule_dp
 
 def register_routes(app, graph):
     """Register all API routes with the Flask application"""
