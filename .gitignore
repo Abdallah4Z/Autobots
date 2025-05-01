@@ -1,1 +1,83 @@
-app/.env
+###############################################################################
+# 1.  ─── FRONT-END (Vite / React / TypeScript) ────────────────────────────── #
+###############################################################################
+
+# Node dependencies & Vite cache
+node_modules/
+.vite-cache/
+dist/
+
+# TypeScript build info / coverage reports
+*.tsbuildinfo
+coverage/
+
+# Local env overrides
+.env                 # set real secrets in .env.example
+.env.*.local
+*.local
+
+# Front-end log / debug output
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+###############################################################################
+# 2.  ─── BACK-END (Python / Flask) ────────────────────────────────────────── #
+###############################################################################
+
+# Virtual-envs (you have backend/.venv + Scripts/Lib/etc.)
+backend/.venv/
+backend/venv/
+.venv/
+env/
+venv/
+
+# Python byte-code & compiled objects
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+
+# Wheel / build artefacts
+*.egg
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+
+# Local settings & logs
+*.log
+*.sqlite3
+instance/
+*.pid
+
+###############################################################################
+# 3.  ─── DATA LAYER (project-specific) ────────────────────────────────────── #
+###############################################################################
+
+# Auto-generated fast-reload artefacts (leave tidy JSON & CSVs tracked)
+data/processed/
+*.pkl
+*.parquet
+
+###############################################################################
+# 4.  ─── IDE / OS CRUD ────────────────────────────────────────────────────── #
+###############################################################################
+
+# VS Code, JetBrains, Sublime, etc.
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# macOS / Windows trash
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Misc editor swap / backup files
+*~
+*.swp
+*.tmp
+*.bak
