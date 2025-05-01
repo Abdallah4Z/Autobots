@@ -1,42 +1,13 @@
-import React, { useRef, useState } from 'react';
-import Map, { 
-  Marker, 
-  NavigationControl,
-  ScaleControl,
-  Popup
-} from 'react-map-gl/maplibre';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-
-// No need for API token with OpenStreetMap
-const OSM_STYLE = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '&copy; OpenStreetMap Contributors',
-      maxzoom: 19
-    }
-  },
-  layers: [
-    {
-      id: 'osm',
-      type: 'raster',
-      source: 'osm',
-      minzoom: 0,
-      maxzoom: 19
-    }
-  ]
-};
+import React, { useState, useCallback } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 
 interface MapLocation {
   id: string;
   name: string;
   latitude: number;
   longitude: number;
-  type: 'bus-stop' | 'metro-station' | 'facility' | 'point-of-interest'| 'other';
+  // Keep the type for potential marker customization, but Google Maps doesn't use it directly for color
+  type: 'bus-stop' | 'metro-station' | 'facility' | 'point-of-interest' | 'other' | 'airport' | 'train-station' | 'bus-terminal' | 'ferry-terminal'; 
 }
 
 interface TransportationMapProps {
@@ -46,132 +17,148 @@ interface TransportationMapProps {
     zoom: number;
   };
   locations?: MapLocation[];
-  mapStyle?: 'streets' | 'satellite' | 'dark' | 'light';
+  // mapStyle prop is removed as Google Maps handles styles differently
   onMapClick?: (longitude: number, latitude: number) => void;
 }
 
+// Define map container style
+const containerStyle = {
+  width: '100%',
+  height: '100%'
+};
+
 const TransportationMap: React.FC<TransportationMapProps> = ({
   initialViewState = {
-    longitude: 31.41,
-    latitude: 30.11, // Default to NYC
-    zoom: 12
+    longitude: 31.23, // Default to Cairo center
+    latitude: 30.05, 
+    zoom: 11
   },
   locations = [],
-  mapStyle = 'dark',
   onMapClick
 }) => {
-  const mapRef = useRef(null);
-  const [clickedPosition, setClickedPosition] = useState<{longitude: number, latitude: number} | null>(null);
+  // State for the selected location for InfoWindow
+  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
+  // State for the clicked coordinates for a temporary marker/info
+  const [clickedCoords, setClickedCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Get the appropriate map style based on the selected style
-  const getMapStyle = () => {
-    switch (mapStyle) {
-      case 'satellite':
-        return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
-      case 'dark':
-        return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-      case 'light':
-        return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-      case 'streets':
-      default:
-        return OSM_STYLE;
-    }
+  // Load the Google Maps script
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    // IMPORTANT: Replace with your actual Google Maps API key
+    // Consider using environment variables for security: process.env.REACT_APP_GOOGLE_MAPS_API_KEY
+    googleMapsApiKey: "AIzaSyAj97q6dp3zkYeI6RgBGcwOQUkAcDfvIyQ" // <<< --- !!! REPLACE THIS !!!
+  });
+
+  // Define the map center based on initialViewState
+  const center = {
+    lat: initialViewState.latitude,
+    lng: initialViewState.longitude
   };
 
-  const getMarkerColor = (type: string) => {
-    switch (type) {
-      case 'bus-stop':
-        return '#1E88E5'; // Blue
-      case 'metro-station':
-        return '#D81B60'; // Pink
-      case 'facility':
-        return '#FFC107'; // Amber
-      case 'point-of-interest':
-        return '#FF9800'; // Orange
-      case 'other':
-        return '#9E9E9E'; // Grey
-      case 'airport':
-        return '#FF5722'; // Deep Orange
-      case 'train-station':
-        return '#3F51B5'; // Indigo
-        case 'bus-terminal':
-        return '#8BC34A'; // Light Green
-        case 'ferry-terminal':  
-        
-        return '#FF5722'; // Deep Orange
-      default:
-        return '#4CAF50'; // Green
-
+  // Map click handler
+  const handleMapClick = useCallback((event: google.maps.MapMouseEvent) => {
+    if (event.latLng) {
+      const lat = event.latLng.lat();
+      const lng = event.latLng.lng();
+      setClickedCoords({ lat, lng });
+      setSelectedLocation(null); // Close any open info window
+      if (onMapClick) {
+        onMapClick(lng, lat); // Pass lng, lat order
+      }
+      console.log(`Clicked at: Longitude ${lng.toFixed(6)}, Latitude ${lat.toFixed(6)}`);
     }
+  }, [onMapClick]);
+
+  // Marker click handler
+  const handleMarkerClick = (location: MapLocation) => {
+    setSelectedLocation(location);
+    setClickedCoords(null); // Clear clicked coords marker if a location marker is clicked
   };
 
-  // Handle map clicks to get coordinates
-  const handleMapClick = (event: maplibregl.MapLayerMouseEvent) => {
-    const { lngLat } = event;
-    const longitude = lngLat.lng;
-    const latitude = lngLat.lat;
-    
-    // Update state with clicked position
-    setClickedPosition({ longitude, latitude });
-    
-    // If a callback was provided, call it with the coordinates
-    if (onMapClick) {
-      onMapClick(longitude, latitude);
-    }
-    
-    console.log(`Clicked at: Longitude ${longitude.toFixed(6)}, Latitude ${latitude.toFixed(6)}`);
+  // Close InfoWindow handler
+  const handleInfoWindowClose = () => {
+    setSelectedLocation(null);
+  };
+  
+  // Close handler for the clicked coordinate InfoWindow
+  const handleClickedCoordInfoWindowClose = () => {
+    setClickedCoords(null);
   };
 
+  // Render loading state
+  if (loadError) {
+    return <div>Error loading maps. Ensure API key is correct and API is enabled.</div>;
+  }
+
+  if (!isLoaded) {
+    return <div>Loading Maps...</div>;
+  }
+
+  // Render the map
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Map
-        ref={mapRef}
-        initialViewState={initialViewState}
-        style={{ width: '100%', height: '100%' }}
-        mapStyle={getMapStyle()}
-        mapLib={maplibregl}
-        attributionControl={true}
-        onClick={handleMapClick}
-        cursor="crosshair"
-      >
-        <NavigationControl position="bottom-right" />
-        <ScaleControl />
+    <GoogleMap
+      mapContainerStyle={containerStyle}
+      center={center}
+      zoom={initialViewState.zoom}
+      onClick={handleMapClick}
+      options={{ // Optional: Disable some default UI elements
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+      }}
+    >
+      {/* Render markers for locations */}
+      {locations.map((location) => (
+        <Marker
+          key={location.id}
+          position={{ lat: location.latitude, lng: location.longitude }}
+          title={location.name} // Tooltip on hover
+          onClick={() => handleMarkerClick(location)}
+          // Optional: Add custom icons based on location.type here
+        />
+      ))}
 
-        {locations.map((location) => (
-          <Marker
-            key={location.id}
-            longitude={location.longitude}
-            latitude={location.latitude}
-            color={getMarkerColor(location.type)}
-          />
-        ))}
+      {/* Show InfoWindow for selected location marker */}
+      {selectedLocation && (
+        <InfoWindow
+          position={{ lat: selectedLocation.latitude, lng: selectedLocation.longitude }}
+          onCloseClick={handleInfoWindowClose}
+        >
+          <div>
+            <h4>{selectedLocation.name}</h4>
+            <p>Type: {selectedLocation.type}</p>
+            <p>Lat: {selectedLocation.latitude.toFixed(6)}, Lng: {selectedLocation.longitude.toFixed(6)}</p>
+          </div>
+        </InfoWindow>
+      )}
+      
+      {/* Show a temporary marker and InfoWindow for clicked coordinates */}
+      {clickedCoords && (
+         <>
+           <Marker 
+             position={clickedCoords} 
+             icon={{ // Simple red circle icon for clicked location
+               path: google.maps.SymbolPath.CIRCLE,
+               scale: 8,
+               fillColor: "#FF0000",
+               fillOpacity: 1,
+               strokeWeight: 0,
+             }}
+           />
+           <InfoWindow
+             position={clickedCoords}
+             onCloseClick={handleClickedCoordInfoWindowClose}
+           >
+             <div>
+               <strong>Selected Coordinates</strong><br />
+               Latitude: {clickedCoords.lat.toFixed(6)}<br />
+               Longitude: {clickedCoords.lng.toFixed(6)}
+             </div>
+           </InfoWindow>
+         </>
+      )}
 
-        {/* Show a marker and popup at the clicked location */}
-        {clickedPosition && (
-          <>
-            <Marker
-              longitude={clickedPosition.longitude}
-              latitude={clickedPosition.latitude}
-              color="#FF0000"
-            />
-            <Popup
-              longitude={clickedPosition.longitude}
-              latitude={clickedPosition.latitude}
-              closeButton={true}
-              closeOnClick={false}
-              onClose={() => setClickedPosition(null)}
-              anchor="bottom"
-            >
-              <div>
-                <strong>Selected Coordinates</strong><br />
-                Longitude: {clickedPosition.longitude.toFixed(6)}<br />
-                Latitude: {clickedPosition.latitude.toFixed(6)}
-              </div>
-            </Popup>
-          </>
-        )}
-      </Map>
-    </div>
+    </GoogleMap>
   );
 };
 

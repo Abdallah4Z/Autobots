@@ -36,8 +36,8 @@ const CAIRO_FACILITIES = [
     id: "F5",
     name: "Egyptian Museum",
     type: "bus-stop" as const,
-    latitude: 30.05,
-    longitude: 31.23
+    latitude: 30.048331,
+    longitude: 31.233659
   },
   {
     id: "F6",
@@ -77,8 +77,6 @@ const CAIRO_FACILITIES = [
 ];
 
 const TransportationDashboard: React.FC = () => {
-  // Only keep the bare minimum state
-  const [mapStyle] = useState<'streets' | 'satellite' | 'dark' | 'light'>('streets');
   const [coordinates, setCoordinates] = useState<{longitude: number, latitude: number} | null>(null);
 
   // Handle map click event
@@ -98,7 +96,6 @@ const TransportationDashboard: React.FC = () => {
           latitude: 30.05,
           zoom: 11
         }}
-        mapStyle={mapStyle}
         onMapClick={handleMapClick}
       />
       
