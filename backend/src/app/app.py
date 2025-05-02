@@ -49,6 +49,13 @@ def initialize_app():
         demand_file=os.path.join(data_dir, "Public Transportation Demand.csv")
     )
     
+    # Simply diagnose disconnected components without forcing connections
+    print("Connecting isolated facilities to the transportation network...")
+    cairo_graph.identify_isolated_facilities()
+    
+    # Verify connectivity and report on disconnected components
+    cairo_graph.verify_and_repair_connectivity()
+    
     # Register API routes
     register_routes(app, cairo_graph)
     

@@ -1,4 +1,4 @@
-maplibre-gl @types/maplibre-gl
+maplibre-gl @https://types/maplibre-gl
 flask
 networkx
 pandas

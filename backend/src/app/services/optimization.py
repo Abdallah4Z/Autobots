@@ -17,18 +17,25 @@ def optimize_road_network_with_mst(graph, prioritize_population=True, include_ex
     
     # Add all nodes
     for node_id, data in graph.nodes.items():
-        # Add population factor for priority weighting
-        population = data.get('population', 0) if not data['is_facility'] else 5000
-        is_critical = data['is_facility'] or (not data['is_facility'] and data.get('population', 0) > 50000)
+        # Add population factor for priority weighting - set default if missing
+        population = data.get('population', 0) 
+        if not isinstance(population, (int, float)):
+            population = 0
+            
+        # For facilities, assume they serve significant population
+        if data['is_facility']:
+            population = 5000
+            
+        is_critical = data['is_facility'] or (not data['is_facility'] and population > 50000)
         
         G.add_node(node_id, 
                   population=population,
                   name=data['name'],
                   is_facility=data['is_facility'],
                   is_critical=is_critical,
-                  type=data['type'],
-                  x=data['x'],
-                  y=data['y'])
+                  type=data.get('type', 'Unknown'),
+                  x=data.get('x', 0),
+                  y=data.get('y', 0))
     
     # First, add all existing roads with reduced weight to prioritize their use
     existing_edges = {}
@@ -59,36 +66,66 @@ def optimize_road_network_with_mst(graph, prioritize_population=True, include_ex
         
         # If prioritizing by population, adjust weight based on connected nodes
         if prioritize_population:
-            from_pop = G.nodes[from_id]['population']
-            to_pop = G.nodes[to_id]['population']
-            
-            # Critical facilities and high population areas get priority (lower weight)
-            from_critical = G.nodes[from_id]['is_critical']
-            to_critical = G.nodes[to_id]['is_critical']
-            
-            if from_critical and to_critical:
-                # Strong priority for connections between critical nodes
-                weight = weight * 0.5
-            elif from_critical or to_critical:
-                # Medium priority for connections to at least one critical node
-                weight = weight * 0.7
-            
-            # Population factor: higher population means lower weight (higher priority)
-            pop_factor = 1.0 / (1.0 + (from_pop + to_pop) / 100000)
-            weight = weight * pop_factor
+            # Handle case where node might not exist in G
+            if from_id in G.nodes and to_id in G.nodes:
+                # Set default population values to avoid KeyError
+                from_pop = G.nodes[from_id].get('population', 0)
+                to_pop = G.nodes[to_id].get('population', 0)
+                
+                # Critical facilities and high population areas get priority (lower weight)
+                from_critical = G.nodes[from_id].get('is_critical', False)
+                to_critical = G.nodes[to_id].get('is_critical', False)
+                
+                if from_critical and to_critical:
+                    # Strong priority for connections between critical nodes
+                    weight = weight * 0.5
+                elif from_critical or to_critical:
+                    # Medium priority for connections to at least one critical node
+                    weight = weight * 0.7
+                
+                # Population factor: higher population means lower weight (higher priority)
+                pop_factor = 1.0 / (1.0 + (from_pop + to_pop) / 100000)
+                weight = weight * pop_factor
         
         # Add cost factor - expensive roads get higher weights
         weight = weight * (1.0 + cost * 0.02)
         
-        G.add_edge(from_id, to_id, 
-                  weight=weight, 
-                  distance=distance,
-                  type='potential',
-                  capacity=capacity,
-                  cost=cost)
+        # Only add the edge if both nodes exist in the graph
+        if from_id in G.nodes and to_id in G.nodes:
+            G.add_edge(from_id, to_id, 
+                      weight=weight, 
+                      distance=distance,
+                      type='potential',
+                      capacity=capacity,
+                      cost=cost)
     
-    # Apply Kruskal's MST algorithm
-    mst = nx.minimum_spanning_tree(G, weight='weight')
+    # Apply Kruskal's MST algorithm if graph is not empty
+    if G.number_of_edges() > 0:
+        try:
+            mst = nx.minimum_spanning_tree(G, weight='weight')
+        except Exception as e:
+            print(f"Error computing MST: {e}")
+            # Return empty result as fallback
+            return {
+                'existing_roads_used': [],
+                'new_roads_proposed': [],
+                'total_cost': 0,
+                'total_distance': 0,
+                'improvement': {'original_edges': G.number_of_edges(), 'mst_edges': 0, 'efficiency': 0},
+                'is_critical_connected': False,
+                'critical_nodes_count': 0
+            }
+    else:
+        # Empty graph case
+        return {
+            'existing_roads_used': [],
+            'new_roads_proposed': [],
+            'total_cost': 0,
+            'total_distance': 0,
+            'improvement': {'original_edges': 0, 'mst_edges': 0, 'efficiency': 0},
+            'is_critical_connected': False,
+            'critical_nodes_count': 0
+        }
     
     # Calculate total cost, distance, and categorize the edges
     total_cost = 0
@@ -102,8 +139,8 @@ def optimize_road_network_with_mst(graph, prioritize_population=True, include_ex
             existing_roads_used.append({
                 'from_id': u,
                 'to_id': v,
-                'from_name': graph.nodes[u]['name'],
-                'to_name': graph.nodes[v]['name'],
+                'from_name': graph.nodes.get(u, {}).get('name', f'Node {u}'),
+                'to_name': graph.nodes.get(v, {}).get('name', f'Node {v}'),
                 'distance': data['distance'],
                 'capacity': data['capacity'],
                 'condition': data['condition']
@@ -115,8 +152,8 @@ def optimize_road_network_with_mst(graph, prioritize_population=True, include_ex
             new_roads_proposed.append({
                 'from_id': u,
                 'to_id': v,
-                'from_name': graph.nodes[u]['name'],
-                'to_name': graph.nodes[v]['name'],
+                'from_name': graph.nodes.get(u, {}).get('name', f'Node {u}'),
+                'to_name': graph.nodes.get(v, {}).get('name', f'Node {v}'),
                 'distance': data['distance'],
                 'capacity': data['capacity'],
                 'cost': cost
@@ -125,8 +162,19 @@ def optimize_road_network_with_mst(graph, prioritize_population=True, include_ex
             total_distance += data['distance']
     
     # Check connectivity for all critical nodes
-    critical_subgraph = nx.subgraph(mst, [n for n, data in G.nodes(data=True) if data['is_critical']])
-    is_critical_connected = nx.is_connected(critical_subgraph) if critical_subgraph.number_of_nodes() > 0 else True
+    critical_nodes = [n for n, data in G.nodes(data=True) if data.get('is_critical', False)]
+    if critical_nodes:
+        try:
+            critical_subgraph = nx.subgraph(mst, critical_nodes)
+            is_critical_connected = nx.is_connected(critical_subgraph) if critical_subgraph.number_of_nodes() > 0 else True
+            critical_nodes_count = critical_subgraph.number_of_nodes()
+        except Exception as e:
+            print(f"Error checking critical connectivity: {e}")
+            is_critical_connected = False
+            critical_nodes_count = 0
+    else:
+        is_critical_connected = True
+        critical_nodes_count = 0
     
     # Calculate improvement statistics
     improvement = {
@@ -143,7 +191,7 @@ def optimize_road_network_with_mst(graph, prioritize_population=True, include_ex
         'total_distance': total_distance,
         'improvement': improvement,
         'is_critical_connected': is_critical_connected,
-        'critical_nodes_count': critical_subgraph.number_of_nodes() if critical_subgraph.number_of_nodes() > 0 else 0
+        'critical_nodes_count': critical_nodes_count
     }
     
     return result
@@ -164,31 +212,46 @@ def optimize_bus_routes_dp(graph, target_coverage=0.85, max_buses=100):
     demand_routes = []
     for demand_key, passengers in graph.transport_demand.items():
         if passengers > 5000:  # Only consider routes with significant demand
-            from_id, to_id = demand_key.split('_')
-            
-            # Check if route is already covered by metro
-            has_metro = False
-            for _, _, stations, _ in graph.metro_lines:
-                station_list = stations.replace('"', '').split(',')
-                if from_id in station_list and to_id in station_list:
-                    has_metro = True
-                    break
-            
-            # If not covered by metro, add to potential bus routes
-            if not has_metro:
-                demand_routes.append({
-                    'from_id': from_id,
-                    'to_id': to_id,
-                    'from_name': graph.nodes[from_id]['name'],
-                    'to_name': graph.nodes[to_id]['name'],
-                    'demand': passengers
-                })
+            try:
+                # Handle both string keys with underscores and tuple keys
+                if isinstance(demand_key, tuple):
+                    from_id, to_id = demand_key
+                else:
+                    from_id, to_id = demand_key.split('_')
+                
+                # Verify that both nodes exist in the graph
+                if from_id not in graph.nodes or to_id not in graph.nodes:
+                    continue
+                
+                # Check if route is already covered by metro
+                has_metro = False
+                for _, _, stations, _ in graph.metro_lines:
+                    station_list = stations.replace('"', '').split(',')
+                    if from_id in station_list and to_id in station_list:
+                        has_metro = True
+                        break
+                
+                # If not covered by metro, add to potential bus routes
+                if not has_metro:
+                    demand_routes.append({
+                        'from_id': from_id,
+                        'to_id': to_id,
+                        'from_name': graph.nodes[from_id]['name'],
+                        'to_name': graph.nodes[to_id]['name'],
+                        'demand': passengers
+                    })
+            except (ValueError, KeyError) as e:
+                # Skip invalid demand entries
+                print(f"Skipping invalid demand entry {demand_key}: {e}")
+                continue
     
     # Sort routes by demand (descending)
     demand_routes.sort(key=lambda x: x['demand'], reverse=True)
     
     # Calculate shortest paths for each route
     G = graph.build_networkx_graph()
+    valid_routes = []
+    
     for route in demand_routes:
         try:
             path = nx.shortest_path(G, source=route['from_id'], target=route['to_id'], weight='distance')
@@ -201,33 +264,43 @@ def optimize_bus_routes_dp(graph, target_coverage=0.85, max_buses=100):
             
             # Estimate bus requirements: assume 1 bus per 30 mins per 1000 passengers
             route['buses_needed'] = max(1, int((route['demand'] / 1000) * (route['travel_time'] / 30)))
-        except nx.NetworkXNoPath:
-            # Skip routes with no viable path
-            route['skip'] = True
+            valid_routes.append(route)
+        except (nx.NetworkXNoPath, KeyError) as e:
+            # Skip routes with no viable path or missing nodes
+            print(f"Skipping route {route['from_id']} to {route['to_id']}: {e}")
     
-    # Remove routes with no path
-    demand_routes = [route for route in demand_routes if not route.get('skip', False)]
+    # If no valid routes, return empty result
+    if not valid_routes:
+        return {
+            'optimized_routes': [],
+            'total_routes': 0,
+            'total_demand': 0,
+            'covered_demand': 0,
+            'coverage_percentage': 0,
+            'buses_used': 0,
+            'max_buses': max_buses
+        }
     
     # Calculate total demand and buses needed
-    total_demand = sum(route['demand'] for route in demand_routes)
-    total_buses_needed = sum(route['buses_needed'] for route in demand_routes)
+    total_demand = sum(route['demand'] for route in valid_routes)
+    total_buses_needed = sum(route['buses_needed'] for route in valid_routes)
     
     # If we have enough buses for all routes, no optimization needed
     if total_buses_needed <= max_buses:
-        optimized_routes = demand_routes
+        optimized_routes = valid_routes
     else:
         # Dynamic programming approach for knapsack problem:
         # Maximize demand coverage with limited buses
         
         # Create weights (buses needed) and values (demand covered)
-        weights = [route['buses_needed'] for route in demand_routes]
-        values = [route['demand'] for route in demand_routes]
+        weights = [route['buses_needed'] for route in valid_routes]
+        values = [route['demand'] for route in valid_routes]
         
         # Initialize DP table
-        dp = [[0 for _ in range(max_buses + 1)] for _ in range(len(demand_routes) + 1)]
+        dp = [[0 for _ in range(max_buses + 1)] for _ in range(len(valid_routes) + 1)]
         
         # Fill the DP table
-        for i in range(1, len(demand_routes) + 1):
+        for i in range(1, len(valid_routes) + 1):
             for w in range(max_buses + 1):
                 if weights[i-1] <= w:
                     dp[i][w] = max(values[i-1] + dp[i-1][w-weights[i-1]], dp[i-1][w])
@@ -237,9 +310,9 @@ def optimize_bus_routes_dp(graph, target_coverage=0.85, max_buses=100):
         # Backtrack to find selected routes
         selected_routes = []
         w = max_buses
-        for i in range(len(demand_routes), 0, -1):
+        for i in range(len(valid_routes), 0, -1):
             if dp[i][w] != dp[i-1][w]:
-                selected_routes.append(demand_routes[i-1])
+                selected_routes.append(valid_routes[i-1])
                 w -= weights[i-1]
         
         optimized_routes = selected_routes
@@ -249,31 +322,38 @@ def optimize_bus_routes_dp(graph, target_coverage=0.85, max_buses=100):
     route_id_counter = len(graph.bus_routes) + 1
     
     for route in optimized_routes:
-        # Create stops list from path
-        stops = route['path']
-        stop_names = [graph.nodes[node_id]['name'] for node_id in stops]
-        
-        # Calculate buses to assign (either what's needed or proportionally reduced)
-        buses_assigned = min(route['buses_needed'], max(1, int(route['buses_needed'] * (max_buses / total_buses_needed))))
-        
-        result.append({
-            'route_id': f"BR{route_id_counter}",
-            'from': route['from_name'],
-            'to': route['to_name'],
-            'stops': stops,
-            'stop_names': stop_names,
-            'distance_km': route['distance'],
-            'travel_time_mins': route['travel_time'],
-            'demand': route['demand'],
-            'buses_assigned': buses_assigned,
-            'frequency_mins': max(5, min(60, int((buses_assigned * 60) / route['travel_time'])))
-        })
-        route_id_counter += 1
+        try:
+            # Create stops list from path
+            stops = route['path']
+            stop_names = [graph.nodes[node_id]['name'] for node_id in stops if node_id in graph.nodes]
+            
+            # Skip routes with missing nodes
+            if len(stop_names) != len(stops):
+                continue
+            
+            # Calculate buses to assign (either what's needed or proportionally reduced)
+            buses_assigned = min(route['buses_needed'], max(1, int(route['buses_needed'] * (max_buses / total_buses_needed))))
+            
+            result.append({
+                'route_id': f"BR{route_id_counter}",
+                'from': route['from_name'],
+                'to': route['to_name'],
+                'stops': stops,
+                'stop_names': stop_names,
+                'distance_km': route['distance'],
+                'travel_time_mins': route['travel_time'],
+                'demand': route['demand'],
+                'buses_assigned': buses_assigned,
+                'frequency_mins': max(5, min(60, int((buses_assigned * 60) / route['travel_time'])))
+            })
+            route_id_counter += 1
+        except KeyError as e:
+            print(f"Skipping route during result formatting: {e}")
     
     # Calculate coverage statistics
     covered_demand = sum(route['demand'] for route in optimized_routes)
     coverage_percentage = (covered_demand / total_demand) * 100 if total_demand > 0 else 0
-    buses_used = sum(route['buses_assigned'] for route in result)
+    buses_used = sum(result[i]['buses_assigned'] for i in range(len(result)))
     
     return {
         'optimized_routes': result,
@@ -312,6 +392,13 @@ def optimize_metro_schedule_dp(graph, peak_hours=['morning', 'evening'], off_pea
         
         for i in range(len(station_ids) - 1):
             try:
+                # Check if both station IDs exist in the graph before attempting to find paths
+                if station_ids[i] not in G.nodes or station_ids[i+1] not in G.nodes:
+                    # Use a default distance if nodes don't exist
+                    print(f"Warning: Metro station ID not found in graph: {station_ids[i]} or {station_ids[i+1]}")
+                    total_distance += 5  # Default 5km between stations
+                    continue
+                    
                 path = nx.shortest_path(G, source=station_ids[i], target=station_ids[i+1], weight='distance')
                 distance = sum(G[path[j]][path[j+1]]['distance'] for j in range(len(path)-1))
                 total_distance += distance
@@ -327,6 +414,10 @@ def optimize_metro_schedule_dp(graph, peak_hours=['morning', 'evening'], off_pea
                 except:
                     # Default to 5km between stations if all else fails
                     total_distance += 5
+            except Exception as e:
+                print(f"Error processing metro line segment: {e}")
+                # Default to 5km between stations if an error occurs
+                total_distance += 5
         
         # Estimate average travel time (metro avg speed ~40km/h)
         travel_time_mins = (total_distance / 40) * 60
@@ -347,7 +438,9 @@ def optimize_metro_schedule_dp(graph, peak_hours=['morning', 'evening'], off_pea
             edge_count = 0
             
             for i in range(len(line_path) - 1):
-                road_id = f"{line_path[i]}{line_path[i+1]}"
+                # Create road_id as string tuple to match traffic data format
+                road_id = (str(line_path[i]), str(line_path[i+1]))
+                
                 if road_id in graph.traffic_data:
                     congestion += graph.traffic_data[road_id][time_period]
                     edge_count += 1

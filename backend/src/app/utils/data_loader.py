@@ -1,4 +1,5 @@
 import pandas as pd
+import ast
 
 def load_data_from_csv(graph, neighborhoods_file, facilities_file, existing_roads_file, 
                      potential_roads_file, traffic_file, metro_file, bus_file, demand_file):
@@ -8,7 +9,13 @@ def load_data_from_csv(graph, neighborhoods_file, facilities_file, existing_road
     neighborhoods_df = pd.read_csv(neighborhoods_file)
     print(f"Neighborhoods CSV columns: {neighborhoods_df.columns.tolist()}")
     for _, row in neighborhoods_df.iterrows(): 
-        graph.nodes[row['ID']] = {
+        node_id = row['ID']
+        # Convert numeric IDs to integers
+        if isinstance(node_id, str) and node_id.isdigit():
+            node_id = int(node_id)
+            
+        graph.nodes[node_id] = {
+            'id': node_id,
             'name': row['Name'],
             'population': row['Population'],
             'type': row['Type'],
@@ -21,12 +28,15 @@ def load_data_from_csv(graph, neighborhoods_file, facilities_file, existing_road
     facilities_df = pd.read_csv(facilities_file)
     print(f"Facilities CSV columns: {facilities_df.columns.tolist()}")
     for _, row in facilities_df.iterrows():
-        graph.nodes[row['ID']] = {
+        node_id = row['ID']
+        graph.nodes[node_id] = {
+            'id': node_id,
             'name': row['Name'],
             'type': row['Type'],
             'x': row['X-coordinate'],
             'y': row['Y-coordinate'],
-            'is_facility': True
+            'is_facility': True,
+            'population': 0  # Facilities don't have population
         }
         
     # Load existing roads
@@ -49,11 +59,24 @@ def load_data_from_csv(graph, neighborhoods_file, facilities_file, existing_road
     
     print(f"Using column names: {from_id_col}, {to_id_col}, {distance_col}, {capacity_col}, {condition_col}")
     
-    graph.existing_roads = [
-        (row[from_id_col], row[to_id_col], row[distance_col], 
-         row[capacity_col], row[condition_col]) 
-        for _, row in roads_df.iterrows()
-    ]
+    graph.existing_roads = []
+    for _, row in roads_df.iterrows():
+        from_id = row[from_id_col]
+        to_id = row[to_id_col]
+        
+        # Convert numeric IDs to integers for consistent processing
+        if isinstance(from_id, str) and from_id.isdigit():
+            from_id = int(from_id)
+        if isinstance(to_id, str) and to_id.isdigit():
+            to_id = int(to_id)
+        
+        # Only add roads where both endpoints exist in our nodes list
+        if from_id in graph.nodes and to_id in graph.nodes:
+            graph.existing_roads.append(
+                (from_id, to_id, row[distance_col], row[capacity_col], row[condition_col])
+            )
+        else:
+            print(f"Warning: Road from {from_id} to {to_id} references nodes that don't exist")
     
     # Load potential roads
     potential_df = pd.read_csv(potential_roads_file)
@@ -72,11 +95,24 @@ def load_data_from_csv(graph, neighborhoods_file, facilities_file, existing_road
     
     print(f"Using column names for potential roads: {from_id_col}, {to_id_col}, {distance_col}, {capacity_col}, {cost_col}")
     
-    graph.potential_roads = [
-        (row[from_id_col], row[to_id_col], row[distance_col], 
-         row[capacity_col], row[cost_col]) 
-        for _, row in potential_df.iterrows()
-    ]
+    graph.potential_roads = []
+    for _, row in potential_df.iterrows():
+        from_id = row[from_id_col]
+        to_id = row[to_id_col]
+        
+        # Convert numeric IDs to integers for consistent processing
+        if isinstance(from_id, str) and from_id.isdigit():
+            from_id = int(from_id)
+        if isinstance(to_id, str) and to_id.isdigit():
+            to_id = int(to_id)
+        
+        # Only add roads where both endpoints exist in our nodes list
+        if from_id in graph.nodes and to_id in graph.nodes:
+            graph.potential_roads.append(
+                (from_id, to_id, row[distance_col], row[capacity_col], row[cost_col])
+            )
+        else:
+            print(f"Warning: Potential road from {from_id} to {to_id} references nodes that don't exist")
     
     # Load traffic data with improved handling for different formats
     traffic_df = pd.read_csv(traffic_file)
@@ -99,22 +135,70 @@ def load_data_from_csv(graph, neighborhoods_file, facilities_file, existing_road
         print("Traffic data uses RoadID format")
         # Format with a single RoadID column
         for _, row in traffic_df.iterrows():
-            road_id = row['RoadID']
-            graph.traffic_data[road_id] = {
-                'morning': row[morning_col],
-                'afternoon': row[afternoon_col],
-                'evening': row[evening_col],
-                'night': row[night_col]
-            }
+            try:
+                # Handle the complex string format from the CSV: "(""1"",""3"")"
+                road_id_str = row['RoadID']
+                
+                # Clean up and parse the tuple string
+                if isinstance(road_id_str, str) and "," in road_id_str:
+                    # Try to extract the IDs from the string format
+                    road_id_str = road_id_str.replace('"', '').replace('(', '').replace(')', '')
+                    parts = road_id_str.split(',')
+                    if len(parts) == 2:
+                        # Create the road ID tuple as expected by the algorithm
+                        from_id = parts[0].strip()
+                        to_id = parts[1].strip()
+                        
+                        # Convert numeric IDs to integers for consistent processing
+                        if from_id.isdigit():
+                            from_id = int(from_id)
+                        if to_id.isdigit():
+                            to_id = int(to_id)
+                        
+                        # Use the tuple as the key - this matches how roads are identified in the graph
+                        road_id = (from_id, to_id)
+                    else:
+                        # Use the original as fallback
+                        road_id = road_id_str
+                else:
+                    road_id = road_id_str
+                
+                graph.traffic_data[road_id] = {
+                    'morning': row[morning_col],
+                    'afternoon': row[afternoon_col],
+                    'evening': row[evening_col],
+                    'night': row[night_col]
+                }
+                
+                # Also add the reverse direction with the same traffic data
+                # This ensures bidirectional traffic is properly modeled
+                if isinstance(road_id, tuple):
+                    to_from_id = (road_id[1], road_id[0])
+                    graph.traffic_data[to_from_id] = {
+                        'morning': row[morning_col],
+                        'afternoon': row[afternoon_col],
+                        'evening': row[evening_col],
+                        'night': row[night_col]
+                    }
+            except Exception as e:
+                print(f"Error processing traffic data row {row['RoadID']}: {e}")
     else:
-        # Format with separate FromID/ToID columns
         from_id_col = next((col for col in from_id_variants if col in traffic_df.columns), None)
         to_id_col = next((col for col in to_id_variants if col in traffic_df.columns), None)
         
         print(f"Using traffic column names: {from_id_col}, {to_id_col}, {morning_col}, {afternoon_col}, {evening_col}, {night_col}")
         
         for _, row in traffic_df.iterrows():
-            road_id = f"{row[from_id_col]}{row[to_id_col]}"
+            from_id = row[from_id_col]
+            to_id = row[to_id_col]
+            
+            # Convert numeric IDs to integers for consistent processing
+            if isinstance(from_id, str) and from_id.isdigit():
+                from_id = int(from_id)
+            if isinstance(to_id, str) and to_id.isdigit():
+                to_id = int(to_id)
+                
+            road_id = (from_id, to_id)
             graph.traffic_data[road_id] = {
                 'morning': row[morning_col],
                 'afternoon': row[afternoon_col],
@@ -192,8 +276,16 @@ def load_data_from_csv(graph, neighborhoods_file, facilities_file, existing_road
         
         if from_id_col and to_id_col and passengers_col:
             for _, row in demand_df.iterrows():
-                from_id, to_id = row[from_id_col], row[to_id_col]
-                key = f"{from_id}_{to_id}"
+                from_id = row[from_id_col]
+                to_id = row[to_id_col]
+                
+                # Convert numeric IDs to integers for consistent processing
+                if isinstance(from_id, str) and from_id.isdigit():
+                    from_id = int(from_id)
+                if isinstance(to_id, str) and to_id.isdigit():
+                    to_id = int(to_id)
+                
+                key = (from_id, to_id)
                 graph.transport_demand[key] = row[passengers_col]
         else:
             print("Warning: Could not find all required columns for transport demand")
