@@ -64,9 +64,15 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   // Load the Google Maps script
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
+<<<<<<< HEAD
     // Using the API key from the environment variables
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: ['places']
+=======
+    // IMPORTANT: Replace with your actual Google Maps API key
+    // Consider using environment variables for security: process.env.REACT_APP_GOOGLE_MAPS_API_KEY
+    googleMapsApiKey: "" // <<< --- !!! REPLACE THIS !!!
+>>>>>>> 7e1d067dfe14f34c815c950722427499026ebf46
   });
 
   // Define the map center based on initialViewState
