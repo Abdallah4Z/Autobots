@@ -93,7 +93,7 @@ const TransportationDashboard: React.FC = () => {
         destination={showRoute ? SAMPLE_DESTINATION : undefined}
       />
       
-      {/* Optional: Display coordinates outside of map for copying/pasting */}
+      {/* Optioooiial: Display coordinates outside of map for copying/pasting */}
       {coordinates && (
         <div className="coordinates-display">
           <p>Longitude: {coordinates.longitude.toFixed(6)}, Latitude: {coordinates.latitude.toFixed(6)}</p>

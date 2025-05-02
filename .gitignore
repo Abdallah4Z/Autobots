@@ -1,13 +1,2 @@
-<<<<<<< HEAD
-env/
-docs/
-node_modules/
-<<<<<<< HEAD
-reqs.txt
-*~
-=======
 app/.env
->>>>>>> 608eff0a874e7a6041d3a5f1cd33038a1c11c805
-=======
-*~
->>>>>>> 595a653110651af5b968d3c036c1afa8b198cf8e
+node_modules
