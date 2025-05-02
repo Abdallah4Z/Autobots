@@ -20,6 +20,57 @@
   bottom: 0;
 }
 
+/* Map Controls */
+.map-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn {
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s;
+}
+
+.route-toggle-btn {
+  background-color: #4285F4; /* Google Blue */
+}
+
+.route-toggle-btn:hover {
+  background-color: #3367D6;
+}
+
+.nodes-toggle-btn {
+  background-color: #34A853; /* Google Green */
+}
+
+.nodes-toggle-btn:hover {
+  background-color: #2E8B57;
+}
+
+.create-road-btn {
+  background-color: #EA4335; /* Google Red */
+}
+
+.create-road-btn:hover {
+  background-color: #C62828;
+}
+
 /* Keep MapLibre controls visible */
 .maplibregl-control-container {
   z-index: 1;

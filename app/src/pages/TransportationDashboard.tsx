@@ -2,82 +2,65 @@ import React, { useState } from 'react';
 import TransportationMap from '../components/TransportationMap';
 import '../style/transportation-map.css';
 
+// Define the Waypoint interface to match what our map component expects
+interface Waypoint {
+  location: {
+    lat: number;
+    lng: number;
+  };
+  stopover: boolean;
+}
+
 // Cairo facilities data from the CSV file
-const CAIRO_FACILITIES = [
+
+
+// Example waypoints for a route
+const SAMPLE_WAYPOINTS: Waypoint[] = [
   {
-    id: "F1",
-    name: "Cairo International Airport",
-    type: "airport" as const,
-    latitude: 30.11,
-    longitude: 31.41
+    location: { lat: 30.03, lng: 31.47 }, // Near Ramses Railway Station
+    stopover: true
   },
   {
-    id: "F2",
-    name: "Ramses Railway Station",
-    type: "train-station" as const,
-    latitude: 30.06,
-    longitude: 31.25
+    location: { lat: 30.06, lng: 31.34 }, // Near Cairo University
+    stopover: true
   },
   {
-    id: "F3",
-    name: "Cairo University",
-    type: "other" as const,
-    latitude: 30.03,
-    longitude: 31.21
+    location: { lat: 30.04, lng: 31.24 }, // Near Cairo International Stadium
+    stopover: true
   },
-  {
-    id: "F4",
-    name: "Al-Azhar University",
-    type: "facility" as const,
-    latitude: 30.05,
-    longitude: 31.26
-  },
-  {
-    id: "F5",
-    name: "Egyptian Museum",
-    type: "bus-stop" as const,
-    latitude: 30.048331,
-    longitude: 31.233659
-  },
-  {
-    id: "F6",
-    name: "Cairo International Stadium",
-    type: "metro-station" as const,
-    latitude: 30.07,
-    longitude: 31.3
-  },
-  {
-    id: "F7",
-    name: "Smart Village",
-    type: "bus-terminal" as const,
-    latitude: 30.07,
-    longitude: 30.97
-  },
-  {
-    id: "F8",
-    name: "Cairo Festival City",
-    type: "point-of-interest" as const,
-    latitude: 30.03,
-    longitude: 31.4
-  },
-  {
-    id: "F9",
-    name: "Qasr El Aini Hospital",
-    type: "ferry-terminal" as const,
-    latitude: 30.03,
-    longitude: 31.23
-  },
-  {
-    id: "F10",
-    name: "Maadi Military Hospital",
-    type: "facility" as const,
-    latitude: 29.95,
-    longitude: 31.25
-  }
+  // {
+  //   location: { lat: 30.07, lng: 30.97 }, // Near Smart Village
+  //   stopover: true
+  // },
+  // {
+  //   location: { lat: 30.03, lng: 31.4 }, // Near Cairo Festival City
+  //   stopover: true
+  // },
+  // {
+  //   location: { lat: 30.03, lng: 31.23 }, // Near Qasr El Aini Hospital
+  //   stopover: true
+  // },
+  // {
+  //   location: { lat: 30.05, lng: 31.28 }, // Near Al-Azhar Park
+  //   stopover: true
+  // },
+  // {
+  //   location: { lat: 30.04, lng: 31.22 }, // Near Tahrir Square
+  //   stopover: true
+  // },
+  // {
+  //   location: { lat: 30.00, lng: 31.23 }, // Near Maadi
+  //   stopover: true
+  // }
 ];
+
+// Sample origin and destination
+const SAMPLE_ORIGIN = { lat: 30.03, lng: 31.4 }; // Cairo Airport
+const SAMPLE_DESTINATION = { lat: 30.03, lng: 31.21}; // Maadi Military Hospital
 
 const TransportationDashboard: React.FC = () => {
   const [coordinates, setCoordinates] = useState<{longitude: number, latitude: number} | null>(null);
+  const [showRoute, setShowRoute] = useState<boolean>(false);
 
   // Handle map click event
   const handleMapClick = (longitude: number, latitude: number) => {
@@ -89,14 +72,25 @@ const TransportationDashboard: React.FC = () => {
 
   return (
     <div className="map-only-container">
+      <div className="map-controls">
+        <button 
+          className="route-toggle-btn"
+          onClick={() => setShowRoute(!showRoute)}
+        >
+          {showRoute ? 'Hide Route' : 'Show Route'}
+        </button>
+      </div>
+      
       <TransportationMap
-        locations={CAIRO_FACILITIES}
         initialViewState={{
           longitude: 31.23, // Centered on Cairo
           latitude: 30.05,
           zoom: 11
         }}
         onMapClick={handleMapClick}
+        waypoints={showRoute ? SAMPLE_WAYPOINTS : []}
+        origin={showRoute ? SAMPLE_ORIGIN : undefined}
+        destination={showRoute ? SAMPLE_DESTINATION : undefined}
       />
       
       {/* Optional: Display coordinates outside of map for copying/pasting */}
