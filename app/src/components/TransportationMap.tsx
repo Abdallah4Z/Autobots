@@ -1,14 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect,useRef } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
-
-interface MapLocation {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  // Keep the type for potential marker customization, but Google Maps doesn't use it directly for color
-  type: 'bus-stop' | 'metro-station' | 'facility' | 'point-of-interest' | 'other' | 'airport' | 'train-station' | 'bus-terminal' | 'ferry-terminal'; 
-}
+import MapDrawer from './MapDrawer';
+import { Box,Typography } from '@mui/material';
 
 interface Waypoint {
   location: {
@@ -24,42 +17,41 @@ interface TransportationMapProps {
     latitude: number;
     zoom: number;
   };
-  locations?: MapLocation[];
   // New prop for waypoints
   waypoints?: Waypoint[];
   // New prop for origin and destination
   origin?: { lat: number; lng: number };
   destination?: { lat: number; lng: number };
   // mapStyle prop is removed as Google Maps handles styles differently
-  onMapClick?: (longitude: number, latitude: number) => void;
+  // Optional prop to control route display from parent
+  defaultShowRoute?: boolean;
+  onRouteToggle?: (showRoute: boolean) => void;
 }
-
 // Define map container style
 const containerStyle = {
   width: '100vw',
   height: '100vh'
 };
-
 const TransportationMap: React.FC<TransportationMapProps> = ({
   initialViewState = {
     longitude: 31.23, // Default to Cairo center
     latitude: 30.05, 
     zoom: 11
   },
-  locations = [],
   waypoints = [],
   origin,
   destination,
-  onMapClick
+  defaultShowRoute = false,
+  onRouteToggle,
 }) => {
-  // State for the selected location for InfoWindow
-  const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
-  // State for the clicked coordinates for a temporary marker/info
-  const [clickedCoords, setClickedCoords] = useState<{ lat: number; lng: number } | null>(null);
   // State for directions response
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
   // State to track if we need to request new directions
   const [directionsRequest, setDirectionsRequest] = useState<boolean>(false);
+  // New state for route toggle
+  const [showRoute, setShowRoute] = useState<boolean>(defaultShowRoute);
+  
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   // Load the Google Maps script
   const { isLoaded, loadError } = useJsApiLoader({
@@ -68,50 +60,35 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: ['places']
   });
-
+  
   // Define the map center based on initialViewState
   const center = {
     lat: initialViewState.latitude,
     lng: initialViewState.longitude
   };
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
 
+  // Handle route toggle
+  const handleToggleRoute = useCallback(() => {
+    const newShowRoute = !showRoute;
+    setShowRoute(newShowRoute);
+    if (onRouteToggle) {
+      onRouteToggle(newShowRoute);
+    }
+  }, [showRoute, onRouteToggle]);
+  
   // Effect to trigger directions request when origin/destination/waypoints change
   useEffect(() => {
-    if (origin && destination) {
+    if (origin && destination && showRoute) {
       setDirectionsRequest(true);
+    } else {
+      setDirectionsResponse(null);
     }
-  }, [origin, destination, waypoints]);
+  }, [origin, destination, waypoints, showRoute]);
 
-  // Map click handler
-  const handleMapClick = useCallback((event: google.maps.MapMouseEvent) => {
-    if (event.latLng) {
-      const lat = event.latLng.lat();
-      const lng = event.latLng.lng();
-      setClickedCoords({ lat, lng });
-      setSelectedLocation(null); // Close any open info window
-      if (onMapClick) {
-        onMapClick(lng, lat); // Pass lng, lat order
-      }
-      console.log(`Clicked at: Longitude ${lng.toFixed(6)}, Latitude ${lat.toFixed(6)}`);
-    }
-  }, [onMapClick]);
-
-  // Marker click handler
-  const handleMarkerClick = (location: MapLocation) => {
-    setSelectedLocation(location);
-    setClickedCoords(null); // Clear clicked coords marker if a location marker is clicked
-  };
-
-  // Close InfoWindow handler
-  const handleInfoWindowClose = () => {
-    setSelectedLocation(null);
-  };
-  
-  // Close handler for the clicked coordinate InfoWindow
-  const handleClickedCoordInfoWindowClose = () => {
-    setClickedCoords(null);
-  };
-
+ 
   // Directions callback handler
   const directionsCallback = (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
     if (status === 'OK' && response) {
@@ -132,25 +109,40 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
     return <div>Loading Maps...</div>;
   }
 
+  // Determine if we should show routes based on state
+  const shouldShowRoute = showRoute && origin && destination;
+
   // Render the map
   return (
+    <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>
+      {/* Add the MapDrawer component with route toggle */}
+      <MapDrawer 
+        title="Transportation Controls" 
+        showFilters={true}
+        showRoute={showRoute}
+        onToggleRoute={handleToggleRoute}
+      >
+        
+      </MapDrawer>
     <GoogleMap
       mapContainerStyle={containerStyle}
       center={center}
       zoom={initialViewState.zoom}
-      onClick={handleMapClick}
+      onLoad={onMapLoad}
+
       options={{ // Optional: Disable some default UI elements
+        
         streetViewControl: false,
         mapTypeControl: false,
         fullscreenControl: false,
       }}
     >
-      {/* Request directions if we have origin and destination */}
-      {directionsRequest && origin && destination && (
+      {/* Request directions if we have origin and destination and showRoute is true */}
+      {directionsRequest && shouldShowRoute && (
         <DirectionsService
           options={{
-            origin: origin,
-            destination: destination,
+            origin: origin!,
+            destination: destination!,
             waypoints: waypoints,
             travelMode: google.maps.TravelMode.DRIVING,
             optimizeWaypoints: false, // Set to false to preserve waypoint order
@@ -160,7 +152,7 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
       )}
       
       {/* Render directions if we have a response */}
-      {directionsResponse && (
+      {directionsResponse && shouldShowRoute && (
         <DirectionsRenderer
           options={{
             directions: directionsResponse,
@@ -169,18 +161,17 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
         />
       )}
 
-      {/* Render markers for locations (if not using directions) */}
+      {/* Render markers for locations (if not using directions)
       {!directionsResponse && locations.map((location) => (
         <Marker
           key={location.id}
           position={{ lat: location.latitude, lng: location.longitude }}
           title={location.name} // Tooltip on hover
-          onClick={() => handleMarkerClick(location)}
           // Optional: Add custom icons based on location.type here
         />
-      ))}
+      ))} */}
 
-      {/* Render waypoint markers if not using directions */}
+      {/* Render waypoint markers if not using directions
       {!directionsResponse && waypoints.map((waypoint, index) => (
         <Marker
           key={`waypoint-${index}`}
@@ -195,49 +186,14 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
           }}
           title={`Waypoint ${index + 1}`}
         />
-      ))}
+      ))} */}
 
-      {/* Show InfoWindow for selected location marker */}
-      {selectedLocation && (
-        <InfoWindow
-          position={{ lat: selectedLocation.latitude, lng: selectedLocation.longitude }}
-          onCloseClick={handleInfoWindowClose}
-        >
-          <div>
-            <h4>{selectedLocation.name}</h4>
-            <p>Type: {selectedLocation.type}</p>
-            <p>Lat: {selectedLocation.latitude.toFixed(6)}, Lng: {selectedLocation.longitude.toFixed(6)}</p>
-          </div>
-        </InfoWindow>
-      )}
-      
-      {/* Show a temporary marker and InfoWindow for clicked coordinates */}
-      {clickedCoords && (
-         <>
-           <Marker 
-             position={clickedCoords} 
-             icon={{ // Simple red circle icon for clicked location
-               path: google.maps.SymbolPath.CIRCLE,
-               scale: 8,
-               fillColor: "#FF0000",
-               fillOpacity: 1,
-               strokeWeight: 0,
-             }}
-           />
-           <InfoWindow
-             position={clickedCoords}
-             onCloseClick={handleClickedCoordInfoWindowClose}
-           >
-             <div>
-               <strong>Selected Coordinates</strong><br />
-               Latitude: {clickedCoords.lat.toFixed(6)}<br />
-               Longitude: {clickedCoords.lng.toFixed(6)}
-             </div>
-           </InfoWindow>
-         </>
-      )}
+    
+    
 
     </GoogleMap>
+    </Box>
+
   );
 };
 
