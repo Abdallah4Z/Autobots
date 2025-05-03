@@ -4,7 +4,7 @@ Includes implementation of A* and Dijkstra algorithms.
 """
 import math
 import networkx as nx
-from typing import List, Tuple, Callable
+from typing import List
 
 
 class AStarAlgorithm:

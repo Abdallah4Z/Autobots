@@ -33,6 +33,30 @@ def calculate_total_distance(path: List[str]) -> float:
     return round(total_distance, 1)
 
 
+def calculate_total_time(path: list) -> float:
+    """Calculate total travel time in minutes using traffic factor and base speed logic."""
+    total_time = 0.0
+    for u, v in zip(path[:-1], path[1:]):
+        edge_data = G.get_edge_data(u, v)
+        distance = edge_data.get('dist_km', 0)
+        capacity = edge_data.get('capacity', 1000)
+        traffic = edge_data.get('traffic', 0)
+        # If traffic data exists, use it; else use default factor and base speed
+        if 'traffic' in edge_data and 'capacity' in edge_data:
+            traffic_factor = max(0.2, 1 - (traffic / capacity))
+            base_speed = edge_data.get('base_speed', 50)
+        else:
+            traffic_factor = 0.8
+            base_speed = 90
+        # Calculate time in minutes
+        if base_speed * traffic_factor > 0:
+            time = (distance / (base_speed * traffic_factor)) * 60
+        else:
+            time = 0
+        total_time += time
+    return round(total_time, 2)
+
+
 def get_graph():
     return G
 

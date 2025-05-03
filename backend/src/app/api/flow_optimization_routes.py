@@ -4,10 +4,10 @@ from .flow_optimization import (
     find_dijkstra_route,
     path_to_edges,
     calculate_total_distance,
+    calculate_total_time
 )
 
-flow_bp = Blueprint('flow_bp', __name__)
-
+flow_bp = Blueprint('flow_bp', 'flow_bp')
 
 @flow_bp.route('/route/astar', methods=['GET'])
 def astar_route():
@@ -19,10 +19,15 @@ def astar_route():
         path = find_astar_route(origin, dest)
         edges = path_to_edges(path)
         total_distance = calculate_total_distance(path)
-        return jsonify({"edges": edges, "total_distance": total_distance})
+        total_time = calculate_total_time(path)
+        
+        return jsonify({
+            "edges": edges, 
+            "total_distance": total_distance,
+            "total_time": total_time
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @flow_bp.route('/route/dijkstra', methods=['GET'])
 def dijkstra_route():
@@ -34,6 +39,12 @@ def dijkstra_route():
         path = find_dijkstra_route(origin, dest)
         edges = path_to_edges(path)
         total_distance = calculate_total_distance(path)
-        return jsonify({"edges": edges, "total_distance": total_distance})
+        total_time = calculate_total_time(path)
+        
+        return jsonify({
+            "edges": edges, 
+            "total_distance": total_distance,
+            "total_time": total_time
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
