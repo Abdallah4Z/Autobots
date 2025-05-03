@@ -1,0 +1,7 @@
+flask
+networkx
+pandas
+matplotlib
+json
+base64
+io
