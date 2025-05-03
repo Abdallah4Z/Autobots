@@ -1,13 +1,115 @@
-<<<<<<< HEAD
-env/
-docs/
+###############################################################################
+# 0.  UNIVERSAL BASICS                                                       #
+###############################################################################
+ 
+# Backup / editor swap files
+*.tmp
+*.bak
+*.swp
+*~
+# macOS & Windows trash
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+ 
+###############################################################################
+# 1.  FRONT-END (Vite / React / TypeScript)                                   #
+###############################################################################
+ 
+# Dependency tree & build cache
 node_modules/
-<<<<<<< HEAD
-reqs.txt
-*~
-=======
-app/.env
->>>>>>> 608eff0a874e7a6041d3a5f1cd33038a1c11c805
-=======
-*~
->>>>>>> 595a653110651af5b968d3c036c1afa8b198cf8e
+.vite-cache/
+dist/
+ 
+# TypeScript build metadata & coverage
+*.tsbuildinfo
+coverage/
+ 
+# Local env overrides
+.env
+.env.*.local
+*.local
+ 
+# npm / yarn / pnpm logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+ 
+###############################################################################
+# 2.  BACK-END (Python / Flask)                                               #
+###############################################################################
+ 
+# Virtual-env folders (any location)
+.venv/
+venv/
+env/
+backend/.venv/
+backend/venv/
+backend/env/
+ 
+# Windows virtual-env executables & scripts (loose copies)
+Scripts/
+Scripts/**
+Activate.ps1
+activate
+activate.bat
+deactivate.bat
+flask.exe
+pip*.exe
+python*.exe
+pyvenv.cfg
+ 
+# Python byte-code & compiled objects
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+ 
+# Wheel / build artifacts
+*.egg
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+ 
+# Local runtime files
+*.log
+*.pid
+instance/
+*.sqlite3
+ 
+###############################################################################
+# 3.  DATA LAYER                                                              #
+###############################################################################
+ 
+# Canonical tidy JSON in data/tidy/ are tracked
+# Auto-generated fast-reload pickles are not
+data/processed/
+*.pkl
+*.parquet
+ 
+# Legacy raw CSV dumps inside backend/data are now ignored
+backend/data/*.csv
+ 
+###############################################################################
+# 4.  DOCUMENTATION / REPORT OUTPUT                                           #
+###############################################################################
+ 
+# Sphinx, MkDocs, or LaTeX build outputs
+_site/
+_build/
+*.aux
+*.out
+*.toc
+*.pdf  # keep final report PDFs tracked by adding !docs/*.pdf if needed
+ 
+###############################################################################
+# 5.  IDE / EDITOR SPECIFIC                                                   #
+###############################################################################
+ 
+# VS Code, JetBrains, Sublime, etc.
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
