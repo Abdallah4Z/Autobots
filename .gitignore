@@ -1,7 +1,7 @@
 ###############################################################################
 # 0.  UNIVERSAL BASICS                                                       #
 ###############################################################################
- 
+
 # Backup / editor swap files
 *.tmp
 *.bak
@@ -17,6 +17,7 @@ desktop.ini
 # 1.  FRONT-END (Vite / React / TypeScript)                                   #
 ###############################################################################
  
+
 # Dependency tree & build cache
 node_modules/
 .vite-cache/
@@ -25,13 +26,12 @@ dist/
 # TypeScript build metadata & coverage
 *.tsbuildinfo
 coverage/
- 
+
 # Local env overrides
 .env
 .env.*.local
 *.local
- 
-# npm / yarn / pnpm logs
+pnpm logs
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
@@ -40,6 +40,7 @@ pnpm-debug.log*
 # 2.  BACK-END (Python / Flask)                                               #
 ###############################################################################
  
+
 # Virtual-env folders (any location)
 .venv/
 venv/
@@ -47,7 +48,7 @@ env/
 backend/.venv/
 backend/venv/
 backend/env/
- 
+
 # Windows virtual-env executables & scripts (loose copies)
 Scripts/
 Scripts/**
@@ -59,35 +60,37 @@ flask.exe
 pip*.exe
 python*.exe
 pyvenv.cfg
- 
+
 # Python byte-code & compiled objects
 __pycache__/
 *.py[cod]
 *.so
 *.pyd
- 
+
 # Wheel / build artifacts
 *.egg
 *.egg-info/
 dist/
 build/
 pip-wheel-metadata/
- 
+
 # Local runtime files
 *.log
 *.pid
 instance/
 *.sqlite3
- 
+
+
 ###############################################################################
 # 3.  DATA LAYER                                                              #
 ###############################################################################
- 
+
 # Canonical tidy JSON in data/tidy/ are tracked
 # Auto-generated fast-reload pickles are not
 data/processed/
 *.pkl
 *.parquet
+
  
 # Legacy raw CSV dumps inside backend/data are now ignored
 backend/data/*.csv
@@ -96,6 +99,7 @@ backend/data/*.csv
 # 4.  DOCUMENTATION / REPORT OUTPUT                                           #
 ###############################################################################
  
+
 # Sphinx, MkDocs, or LaTeX build outputs
 _site/
 _build/
@@ -103,13 +107,15 @@ _build/
 *.out
 *.toc
 *.pdf  # keep final report PDFs tracked by adding !docs/*.pdf if needed
- 
+
+
 ###############################################################################
 # 5.  IDE / EDITOR SPECIFIC                                                   #
 ###############################################################################
- 
+
 # VS Code, JetBrains, Sublime, etc.
 .vscode/
 .idea/
 *.sublime-workspace
+
 *.sublime-project
