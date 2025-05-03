@@ -1,0 +1,12 @@
+[
+  { "id": "F1",  "name": "Cairo International Airport",   "type": "Airport",   "x": 31.41, "y": 30.11 },
+  { "id": "F2",  "name": "Ramses Railway Station",        "type": "Transit Hub","x": 31.25, "y": 30.06 },
+  { "id": "F3",  "name": "Cairo University",              "type": "Education",  "x": 31.21, "y": 30.03 },
+  { "id": "F4",  "name": "Al-Azhar University",           "type": "Education",  "x": 31.26, "y": 30.05 },
+  { "id": "F5",  "name": "Egyptian Museum",               "type": "Tourism",    "x": 31.23, "y": 30.05 },
+  { "id": "F6",  "name": "Cairo International Stadium",   "type": "Sports",     "x": 31.30, "y": 30.07 },
+  { "id": "F7",  "name": "Smart Village",                 "type": "Business",   "x": 30.97, "y": 30.07 },
+  { "id": "F8",  "name": "Cairo Festival City",           "type": "Commercial", "x": 31.40, "y": 30.03 },
+  { "id": "F9",  "name": "Qasr El Aini Hospital",         "type": "Medical",    "x": 31.23, "y": 30.03 },
+  { "id": "F10", "name": "Maadi Military Hospital",       "type": "Medical",    "x": 31.25, "y": 29.95 }
+]
