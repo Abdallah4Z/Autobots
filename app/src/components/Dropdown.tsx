@@ -71,7 +71,6 @@ const Dropdown: React.FC<DropdownProps> = ({
       const url = `/api/flow/route/astar?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}`;
       console.log('Request URL:', url);
   
-      // Try to fetch with JSON headers
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -82,76 +81,70 @@ const Dropdown: React.FC<DropdownProps> = ({
       console.log('Response status:', response.status);
       console.log('Response headers:', Object.fromEntries([...response.headers]));
       
-      // Get the response text first
-      const responseText = await response.text();
-      console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
-      
-      // Check for server error status
-      if (response.status >= 500) {
-        console.error('Server error response:', responseText);
-        alert(`Server error (${response.status}). Check your backend logs for details.`);
-        
-        // Optional: Try extracting error message if it's in JSON format
-        try {
-          if (responseText.includes('{') && responseText.includes('}')) {
-            const errorMatch = responseText.match(/\{.*"error":\s*"([^"]+)".*\}/);
-            if (errorMatch && errorMatch[1]) {
-              console.log('Extracted error message:', errorMatch[1]);
-            }
-          }
-        } catch (e) {
-          // Silent catch - just for extra error info
-        }
-        
-        return null;
-      }
-      
-      // For non-500 errors, still try to process
       if (!response.ok) {
         throw new Error(`Failed to fetch route: ${response.status} ${response.statusText}`);
       }
       
-      // Try to parse as JSON
+      // Get the response text and parse it
+      const responseText = await response.text();
+      console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+      
+      // Parse the JSON response
       let data;
       try {
         data = JSON.parse(responseText);
         console.log('Successfully parsed route data:', data);
       } catch (jsonError) {
         console.error('Failed to parse JSON:', jsonError);
+        throw new Error('Response is not valid JSON');
+      }
+
+      // Extract route nodes in order
+      if (data && data.edges && Array.isArray(data.edges)) {
+        // Create ordered list of nodes (from origin to destination)
+        const orderedNodes = extractOrderedNodes(data.edges);
+        console.log('Ordered route nodes:', orderedNodes);
         
-        // Try extracting JSON from HTML if needed
-        if (responseText.includes('{') && responseText.includes('edges')) {
-          try {
-            // Look for our specific JSON format with edges, total_distance and total_time
-            const jsonMatch = responseText.match(/\{\s*"edges"\s*:\s*\[\s*\{.*?\}\s*\]\s*,\s*"total_distance"\s*:\s*[\d\.]+\s*,\s*"total_time"\s*:\s*[\d\.]+\s*\}/s);
-            if (jsonMatch && jsonMatch[0]) {
-              const jsonContent = jsonMatch[0];
-              console.log('Found JSON content in response:', jsonContent);
-              data = JSON.parse(jsonContent);
-              console.log('Successfully extracted embedded JSON:', data);
-            } else {
-              throw new Error('Could not extract JSON from response');
-            }
-          } catch (extractError) {
-            console.error('Failed to extract JSON:', extractError);
-            throw new Error('Response is not valid JSON and extraction failed');
-          }
-        } else {
-          throw new Error('Response is not valid JSON');
+        // Additional route information
+        const routeInfo = {
+          nodes: orderedNodes,
+          totalDistance: data.total_distance,
+          totalTime: data.total_time
+        };
+        
+        console.log('Processed route information:', routeInfo);
+        
+        // Pass the processed route data to parent component
+        if (onFetchRoute) {
+          onFetchRoute(routeInfo);
         }
+        
+        return routeInfo;
+      } else {
+        throw new Error('Invalid route data format: missing edges array');
       }
-      
-      // Optional: Pass route data to parent
-      if (onFetchRoute && data) {
-        onFetchRoute(data);
-      }
-  
-      return data;
     } catch (error) {
       console.error('Error fetching route:', error);
       alert(`Failed to fetch route data: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     }
+  };
+
+  // Helper function to extract ordered list of nodes from edges
+  const extractOrderedNodes = (edges: Array<{from: string, to: string}>): string[] => {
+    if (!edges || edges.length === 0) {
+      return [];
+    }
+
+    // Start with the first "from" node (origin)
+    const orderedNodes: string[] = [edges[0].from];
+    
+    // Add each edge's "to" node in order
+    edges.forEach(edge => {
+      orderedNodes.push(edge.to);
+    });
+    
+    return orderedNodes;
   };
   
   return (
