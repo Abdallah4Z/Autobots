@@ -17,6 +17,8 @@ interface DropdownProps {
     origin: string;
     destination: string;
     timeOfDay: string;
+    route: string;
+    lines:string;
   }) => void;
   onFetchRoute?: (data?: any) => void;
 }
@@ -30,17 +32,21 @@ const Dropdown: React.FC<DropdownProps> = ({
   const [Origin, setOrigin] = useState('1');
   const [Destination, setDestination] = useState('2');
   const [Time, setTime] = useState('Morning');
-
+  const [Routes, setRoute] = useState('MST');
+  const [Lines, setLine] = useState('Roads');
   // Notify parent component when values change
   useEffect(() => {
     if (onValuesChange) {
       onValuesChange({
         origin: Origin,
         destination: Destination,
-        timeOfDay: Time
+        timeOfDay: Time,
+        route: Routes,
+        lines:Lines
+        
       });
     }
-  }, [Origin, Destination, Time, onValuesChange]);
+  }, [Origin, Destination, Time,Routes,Lines, onValuesChange]);
 
   // Handlers
   const handleOriginChange = (event: SelectChangeEvent) => {
@@ -54,7 +60,12 @@ const Dropdown: React.FC<DropdownProps> = ({
   const handleTimeChange = (event: SelectChangeEvent) => {
     setTime(event.target.value);
   };
-
+  const handleRouteChange = (event: SelectChangeEvent) => {
+    setRoute(event.target.value);
+  };
+  const handleLineChange = (event: SelectChangeEvent) => {
+    setLine(event.target.value);
+  };
   const selectStyle = {
     fontSize: '1.2rem',
     height: '3.5rem',
@@ -151,9 +162,9 @@ const Dropdown: React.FC<DropdownProps> = ({
     <Box className={className} sx={{ p: 1 }}>
       <Typography variant="h5" sx={{ mb: 1, ml: 1 }}>Map Filters</Typography>
 
-      <Grid container spacing={4}>
+      <Grid container spacing={8}>
         {/* Location */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={24} sm={12} md={6}>
           <FormControl fullWidth>
             <InputLabel id="location-label" sx={{ fontSize: '1.2rem' }}>Origin</InputLabel>
             <Select
@@ -194,7 +205,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
 
         {/* Category */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={24} sm={12} md={6}>
           <FormControl fullWidth>
             <InputLabel id="category-label" sx={{ fontSize: '1.2rem' }}>Destination</InputLabel>
             <Select
@@ -235,7 +246,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
 
         {/* Time Range */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={24} sm={12} md={6}>
           <FormControl fullWidth>
             <InputLabel id="time-range-label" sx={{ fontSize: '1.2rem' }}>TimeOFday</InputLabel>
             <Select
@@ -253,9 +264,47 @@ const Dropdown: React.FC<DropdownProps> = ({
             </Select>
           </FormControl>
         </Grid>
+        <Grid item xs={24} sm={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel id="Route-label" sx={{ fontSize: '1.2rem' }}>Route</InputLabel>
+            <Select
+              labelId="Route-label"
+              id="Route-select"
+              value={Routes}
+              label="Route"
+              onChange={handleRouteChange}
+              sx={selectStyle}
+            >
+              <MenuItem value="MST">MST</MenuItem>
+              <MenuItem value="Private">Private</MenuItem>
+              <MenuItem value="Public">Public</MenuItem>
+              <MenuItem value="Emergency">Emergency</MenuItem>
 
+              
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={24} sm={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel id="Line-label" sx={{ fontSize: '1.2rem' }}>Line</InputLabel>
+            <Select
+              labelId="Line-label"
+              id="Line-select"
+              value={Lines}
+              label="Line"
+              onChange={handleLineChange}
+              sx={selectStyle}
+            >
+              <MenuItem value="StraightLine">StraightLine</MenuItem>
+              <MenuItem value="Roads">Roads</MenuItem>
+              
+
+              
+            </Select>
+          </FormControl>
+        </Grid>
         {/* Fetch Route Button */}
-        <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex', alignItems: 'center' }}>
+        <Grid item xs={24} sm={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
           <Button 
             variant="contained" 
             color="primary" 

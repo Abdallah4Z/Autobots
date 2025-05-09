@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import TransportationMap from '../components/TransportationMap';
-import ApiDebugger from '../components/ApiDebugger';
 import Dropdown from '../components/Dropdown';
 import '../style/transportation-map.css';
 import { Box, Button, Typography } from '@mui/material';
@@ -100,24 +99,7 @@ const TransportationDashboard: React.FC = () => {
   return (
     <div className="dashboard-container">
       <Box sx={{ width: '100%', p: 2 }}>
-        <Dropdown onFetchRoute={handleRouteData} />
-        
-        <Box sx={{ textAlign: 'center', my: 2 }}>
-          <Button 
-            variant="contained" 
-            color="secondary" 
-            onClick={() => setShowDebugger(!showDebugger)}
-          >
-            {showDebugger ? 'Hide API Debugger' : 'Show API Debugger'}
-          </Button>
-        </Box>
-        
-        {showDebugger && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>API Debugging Tool</Typography>
-            <ApiDebugger />
-          </Box>
-        )}
+        {/* Remove the duplicate Dropdown component that's always visible */}
         
         {routeInfo && (
           <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
@@ -140,6 +122,7 @@ const TransportationDashboard: React.FC = () => {
           origin={origin}
           destination={destination}
           defaultShowRoute={showRoute}
+          onFetchRoute={handleRouteData} // Pass the route data handler
         />
       </div>
     </div>

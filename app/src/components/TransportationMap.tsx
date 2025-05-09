@@ -22,10 +22,11 @@ interface TransportationMapProps {
   // New prop for origin and destination
   origin?: { lat: number; lng: number };
   destination?: { lat: number; lng: number };
-  // mapStyle prop is removed as Google Maps handles styles differently
   // Optional prop to control route display from parent
   defaultShowRoute?: boolean;
   onRouteToggle?: (showRoute: boolean) => void;
+  // Add route data handler
+  onFetchRoute?: (data: any) => void;
 }
 // Define map container style
 const containerStyle = {
@@ -43,6 +44,7 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   destination,
   defaultShowRoute = false,
   onRouteToggle,
+  onFetchRoute
 }) => {
   // State for directions response
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
@@ -115,83 +117,83 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   // Render the map
   return (
     <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>
-      {/* Add the MapDrawer component with route toggle */}
+      {/* Only render MapDrawer when hovering (controlled by MapDrawer component's internal hover logic) */}
       <MapDrawer 
         title="Transportation Controls" 
         showFilters={true}
         showRoute={showRoute}
         onToggleRoute={handleToggleRoute}
+        onFetchRoute={onFetchRoute}
       >
-        
+        {/* No content needed here as it's handled within MapDrawer */}
       </MapDrawer>
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={center}
-      zoom={initialViewState.zoom}
-      onLoad={onMapLoad}
-
-      options={{ // Optional: Disable some default UI elements
-        
-        streetViewControl: false,
-        mapTypeControl: false,
-        fullscreenControl: false,
-      }}
-    >
-      {/* Request directions if we have origin and destination and showRoute is true */}
-      {directionsRequest && shouldShowRoute && (
-        <DirectionsService
-          options={{
-            origin: origin!,
-            destination: destination!,
-            waypoints: waypoints,
-            travelMode: google.maps.TravelMode.DRIVING,
-            optimizeWaypoints: false, // Set to false to preserve waypoint order
-          }}
-          callback={directionsCallback}
-        />
-      )}
       
-      {/* Render directions if we have a response */}
-      {directionsResponse && shouldShowRoute && (
-        <DirectionsRenderer
-          options={{
-            directions: directionsResponse,
-            suppressMarkers: false, // Set to true if you want to use custom markers
-          }}
-        />
-      )}
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={initialViewState.zoom}
+        onLoad={onMapLoad}
+        options={{ 
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
+      >
+        {/* Request directions if we have origin and destination and showRoute is true */}
+        {directionsRequest && shouldShowRoute && (
+          <DirectionsService
+            options={{
+              origin: origin!,
+              destination: destination!,
+              waypoints: waypoints,
+              travelMode: google.maps.TravelMode.DRIVING,
+              optimizeWaypoints: false, // Set to false to preserve waypoint order
+            }}
+            callback={directionsCallback}
+          />
+        )}
+        
+        {/* Render directions if we have a response */}
+        {directionsResponse && shouldShowRoute && (
+          <DirectionsRenderer
+            options={{
+              directions: directionsResponse,
+              suppressMarkers: false, // Set to true if you want to use custom markers
+            }}
+          />
+        )}
 
-      {/* Render markers for locations (if not using directions)
-      {!directionsResponse && locations.map((location) => (
-        <Marker
-          key={location.id}
-          position={{ lat: location.latitude, lng: location.longitude }}
-          title={location.name} // Tooltip on hover
-          // Optional: Add custom icons based on location.type here
-        />
-      ))} */}
+        {/* Render markers for locations (if not using directions)
+        {!directionsResponse && locations.map((location) => (
+          <Marker
+            key={location.id}
+            position={{ lat: location.latitude, lng: location.longitude }}
+            title={location.name} // Tooltip on hover
+            // Optional: Add custom icons based on location.type here
+          />
+        ))} */}
 
-      {/* Render waypoint markers if not using directions
-      {!directionsResponse && waypoints.map((waypoint, index) => (
-        <Marker
-          key={`waypoint-${index}`}
-          position={waypoint.location}
-          icon={{
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 7,
-            fillColor: "#0000FF",
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: "#FFFFFF",
-          }}
-          title={`Waypoint ${index + 1}`}
-        />
-      ))} */}
+        {/* Render waypoint markers if not using directions
+        {!directionsResponse && waypoints.map((waypoint, index) => (
+          <Marker
+            key={`waypoint-${index}`}
+            position={waypoint.location}
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: "#0000FF",
+              fillOpacity: 1,
+              strokeWeight: 2,
+              strokeColor: "#FFFFFF",
+            }}
+            title={`Waypoint ${index + 1}`}
+          />
+        ))} */}
 
-    
-    
+      
+      
 
-    </GoogleMap>
+      </GoogleMap>
     </Box>
 
   );
