@@ -20,6 +20,57 @@
   bottom: 0;
 }
 
+/* Map Controls */
+.map-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn {
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s;
+}
+
+.route-toggle-btn {
+  background-color: #4285F4; /* Google Blue */
+}
+
+.route-toggle-btn:hover {
+  background-color: #3367D6;
+}
+
+.nodes-toggle-btn {
+  background-color: #34A853; /* Google Green */
+}
+
+.nodes-toggle-btn:hover {
+  background-color: #2E8B57;
+}
+
+.create-road-btn {
+  background-color: #EA4335; /* Google Red */
+}
+
+.create-road-btn:hover {
+  background-color: #C62828;
+}
+
 /* Keep MapLibre controls visible */
 .maplibregl-control-container {
   z-index: 1;
@@ -49,4 +100,113 @@ body, html {
 .coordinates-display p {
   margin: 0;
   font-size: 14px;
+}
+
+/* Map Dropdown Menu */
+.map-dropdown-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  min-width: 180px;
+}
+
+.map-dropdown-trigger {
+  background-color: #4285F4;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 0 0 8px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.map-dropdown-trigger:hover {
+  background-color: #3367D6;
+}
+
+.dropdown-arrow {
+  margin-left: 8px;
+}
+
+.map-dropdown-content {
+  background-color: white;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.2s ease;
+}
+
+.map-dropdown-content ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-dropdown-content li {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.map-dropdown-content li:last-child {
+  border-bottom: none;
+}
+
+.map-dropdown-content li:hover {
+  background-color: #f5f5f5;
+  color: #4285F4;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Map Layers Menu specific styles */
+.map-layers-menu {
+  right: 50%;
+  left: auto;
+  transform: translateX(50%);
+  margin-right: -180px;
+  top: 0;
+}
+
+.layer-options-list {
+  padding: 5px 0;
+}
+
+.layer-option-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+}
+
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.layer-toggle input[type="checkbox"] {
+  margin-right: 10px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.layer-label {
+  flex: 1;
 }
