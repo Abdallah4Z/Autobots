@@ -1,42 +1,14 @@
-import React, { useRef, useState } from 'react';
-import Map, { 
-  Marker, 
-  NavigationControl,
-  ScaleControl,
-  Popup
-} from 'react-map-gl/maplibre';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import React, { useState, useCallback, useEffect,useRef } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
+import MapDrawer from './MapDrawer';
+import { Box,Typography } from '@mui/material';
 
-// No need for API token with OpenStreetMap
-const OSM_STYLE = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '&copy; OpenStreetMap Contributors',
-      maxzoom: 19
-    }
-  },
-  layers: [
-    {
-      id: 'osm',
-      type: 'raster',
-      source: 'osm',
-      minzoom: 0,
-      maxzoom: 19
-    }
-  ]
-};
-
-interface MapLocation {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  type: 'bus-stop' | 'metro-station' | 'facility' | 'point-of-interest'| 'other';
+interface Waypoint {
+  location: {
+    lat: number;
+    lng: number;
+  };
+  stopover: boolean;
 }
 
 interface TransportationMapProps {
@@ -45,133 +17,185 @@ interface TransportationMapProps {
     latitude: number;
     zoom: number;
   };
-  locations?: MapLocation[];
-  mapStyle?: 'streets' | 'satellite' | 'dark' | 'light';
-  onMapClick?: (longitude: number, latitude: number) => void;
+  // New prop for waypoints
+  waypoints?: Waypoint[];
+  // New prop for origin and destination
+  origin?: { lat: number; lng: number };
+  destination?: { lat: number; lng: number };
+  // Optional prop to control route display from parent
+  defaultShowRoute?: boolean;
+  onRouteToggle?: (showRoute: boolean) => void;
+  // Add route data handler
+  onFetchRoute?: (data: any) => void;
 }
-
+// Define map container style
+const containerStyle = {
+  width: '100vw',
+  height: '100vh'
+};
 const TransportationMap: React.FC<TransportationMapProps> = ({
   initialViewState = {
-    longitude: 31.41,
-    latitude: 30.11, // Default to NYC
-    zoom: 12
+    longitude: 31.23, // Default to Cairo center
+    latitude: 30.05, 
+    zoom: 11
   },
-  locations = [],
-  mapStyle = 'dark',
-  onMapClick
+  waypoints = [],
+  origin,
+  destination,
+  defaultShowRoute = false,
+  onRouteToggle,
+  onFetchRoute
 }) => {
-  const mapRef = useRef(null);
-  const [clickedPosition, setClickedPosition] = useState<{longitude: number, latitude: number} | null>(null);
+  // State for directions response
+  const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+  // State to track if we need to request new directions
+  const [directionsRequest, setDirectionsRequest] = useState<boolean>(false);
+  // New state for route toggle
+  const [showRoute, setShowRoute] = useState<boolean>(defaultShowRoute);
+  
+  const mapRef = useRef<google.maps.Map | null>(null);
 
-  // Get the appropriate map style based on the selected style
-  const getMapStyle = () => {
-    switch (mapStyle) {
-      case 'satellite':
-        return 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
-      case 'dark':
-        return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-      case 'light':
-        return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-      case 'streets':
-      default:
-        return OSM_STYLE;
+  // Load the Google Maps script
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    // Using the API key from the environment variables
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: ['places']
+  });
+  
+  // Define the map center based on initialViewState
+  const center = {
+    lat: initialViewState.latitude,
+    lng: initialViewState.longitude
+  };
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
+
+  // Handle route toggle
+  const handleToggleRoute = useCallback(() => {
+    const newShowRoute = !showRoute;
+    setShowRoute(newShowRoute);
+    if (onRouteToggle) {
+      onRouteToggle(newShowRoute);
+    }
+  }, [showRoute, onRouteToggle]);
+  
+  // Effect to trigger directions request when origin/destination/waypoints change
+  useEffect(() => {
+    if (origin && destination && showRoute) {
+      setDirectionsRequest(true);
+    } else {
+      setDirectionsResponse(null);
+    }
+  }, [origin, destination, waypoints, showRoute]);
+
+ 
+  // Directions callback handler
+  const directionsCallback = (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+    if (status === 'OK' && response) {
+      setDirectionsResponse(response);
+      setDirectionsRequest(false);
+    } else {
+      console.error('Directions request failed with status:', status);
+      setDirectionsRequest(false);
     }
   };
 
-  const getMarkerColor = (type: string) => {
-    switch (type) {
-      case 'bus-stop':
-        return '#1E88E5'; // Blue
-      case 'metro-station':
-        return '#D81B60'; // Pink
-      case 'facility':
-        return '#FFC107'; // Amber
-      case 'point-of-interest':
-        return '#FF9800'; // Orange
-      case 'other':
-        return '#9E9E9E'; // Grey
-      case 'airport':
-        return '#FF5722'; // Deep Orange
-      case 'train-station':
-        return '#3F51B5'; // Indigo
-        case 'bus-terminal':
-        return '#8BC34A'; // Light Green
-        case 'ferry-terminal':  
-        
-        return '#FF5722'; // Deep Orange
-      default:
-        return '#4CAF50'; // Green
+  // Render loading state
+  if (loadError) {
+    return <div>Error loading maps. Ensure API key is correct and API is enabled.</div>;
+  }
 
-    }
-  };
+  if (!isLoaded) {
+    return <div>Loading Maps...</div>;
+  }
 
-  // Handle map clicks to get coordinates
-  const handleMapClick = (event: maplibregl.MapLayerMouseEvent) => {
-    const { lngLat } = event;
-    const longitude = lngLat.lng;
-    const latitude = lngLat.lat;
-    
-    // Update state with clicked position
-    setClickedPosition({ longitude, latitude });
-    
-    // If a callback was provided, call it with the coordinates
-    if (onMapClick) {
-      onMapClick(longitude, latitude);
-    }
-    
-    console.log(`Clicked at: Longitude ${longitude.toFixed(6)}, Latitude ${latitude.toFixed(6)}`);
-  };
+  // Determine if we should show routes based on state
+  const shouldShowRoute = showRoute && origin && destination;
 
+  // Render the map
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Map
-        ref={mapRef}
-        initialViewState={initialViewState}
-        style={{ width: '100%', height: '100%' }}
-        mapStyle={getMapStyle()}
-        mapLib={maplibregl}
-        attributionControl={true}
-        onClick={handleMapClick}
-        cursor="crosshair"
+    <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>
+      {/* Only render MapDrawer when hovering (controlled by MapDrawer component's internal hover logic) */}
+      <MapDrawer 
+        title="Transportation Controls" 
+        showFilters={true}
+        showRoute={showRoute}
+        onToggleRoute={handleToggleRoute}
+        onFetchRoute={onFetchRoute}
       >
-        <NavigationControl position="bottom-right" />
-        <ScaleControl />
+        {/* No content needed here as it's handled within MapDrawer */}
+      </MapDrawer>
+      
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={initialViewState.zoom}
+        onLoad={onMapLoad}
+        options={{ 
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
+      >
+        {/* Request directions if we have origin and destination and showRoute is true */}
+        {directionsRequest && shouldShowRoute && (
+          <DirectionsService
+            options={{
+              origin: origin!,
+              destination: destination!,
+              waypoints: waypoints,
+              travelMode: google.maps.TravelMode.DRIVING,
+              optimizeWaypoints: false, // Set to false to preserve waypoint order
+            }}
+            callback={directionsCallback}
+          />
+        )}
+        
+        {/* Render directions if we have a response */}
+        {directionsResponse && shouldShowRoute && (
+          <DirectionsRenderer
+            options={{
+              directions: directionsResponse,
+              suppressMarkers: false, // Set to true if you want to use custom markers
+            }}
+          />
+        )}
 
-        {locations.map((location) => (
+        {/* Render markers for locations (if not using directions)
+        {!directionsResponse && locations.map((location) => (
           <Marker
             key={location.id}
-            longitude={location.longitude}
-            latitude={location.latitude}
-            color={getMarkerColor(location.type)}
+            position={{ lat: location.latitude, lng: location.longitude }}
+            title={location.name} // Tooltip on hover
+            // Optional: Add custom icons based on location.type here
           />
-        ))}
+        ))} */}
 
-        {/* Show a marker and popup at the clicked location */}
-        {clickedPosition && (
-          <>
-            <Marker
-              longitude={clickedPosition.longitude}
-              latitude={clickedPosition.latitude}
-              color="#FF0000"
-            />
-            <Popup
-              longitude={clickedPosition.longitude}
-              latitude={clickedPosition.latitude}
-              closeButton={true}
-              closeOnClick={false}
-              onClose={() => setClickedPosition(null)}
-              anchor="bottom"
-            >
-              <div>
-                <strong>Selected Coordinates</strong><br />
-                Longitude: {clickedPosition.longitude.toFixed(6)}<br />
-                Latitude: {clickedPosition.latitude.toFixed(6)}
-              </div>
-            </Popup>
-          </>
-        )}
-      </Map>
-    </div>
+        {/* Render waypoint markers if not using directions
+        {!directionsResponse && waypoints.map((waypoint, index) => (
+          <Marker
+            key={`waypoint-${index}`}
+            position={waypoint.location}
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: "#0000FF",
+              fillOpacity: 1,
+              strokeWeight: 2,
+              strokeColor: "#FFFFFF",
+            }}
+            title={`Waypoint ${index + 1}`}
+          />
+        ))} */}
+
+      
+      
+
+      </GoogleMap>
+    </Box>
+
   );
 };
 
