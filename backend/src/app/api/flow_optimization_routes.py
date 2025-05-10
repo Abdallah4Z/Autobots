@@ -13,10 +13,11 @@ flow_bp = Blueprint('flow_bp', 'flow_bp')
 def astar_route():
     origin = request.args.get('origin')
     dest = request.args.get('dest')
+    period = request.args.get('period')
     if not origin or not dest:
         return jsonify({"error": "Missing origin or destination"}), 400
     try:
-        path = find_astar_route(origin, dest)
+        path = find_astar_route(origin, dest, period)
         edges = path_to_edges(path)
         total_distance = calculate_total_distance(path)
         total_time = calculate_total_time(path)
@@ -33,10 +34,11 @@ def astar_route():
 def dijkstra_route():
     origin = request.args.get('origin')
     dest = request.args.get('dest')
+    period= request.args.get('period')
     if not origin or not dest:
         return jsonify({"error": "Missing origin or destination"}), 400
     try:
-        path = find_dijkstra_route(origin, dest)
+        path = find_dijkstra_route(origin, dest,period)
         edges = path_to_edges(path)
         total_distance = calculate_total_distance(path)
         total_time = calculate_total_time(path)
