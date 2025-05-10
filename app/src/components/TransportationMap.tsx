@@ -23,8 +23,10 @@ interface RouteData {
   nodes: string[];
   totalDistance?: number;
   totalTime?: number;
-  edges?: Array<{from: string, to: string}>;
+  edges?: Array<{from: string, to: string, mode?: string, route?: string}>;
   lineStyle?: string;
+  isPublicTransport?: boolean;
+  steps?: any[]; // Public transport steps data
 }
 
 interface TransportationMapProps {
@@ -63,6 +65,61 @@ const getNodeLocation = (nodeId: string): RouteNode | undefined => {
     };
   }
   return undefined;
+};
+
+// Add this component before the main TransportationMap component
+// This component will handle rendering directions for individual MST edges
+interface EdgeDirectionsProps {
+  fromNode: RouteNode;
+  toNode: RouteNode;
+  index: number;
+}
+
+const EdgeDirectionsRenderer: React.FC<EdgeDirectionsProps> = ({ fromNode, toNode, index }) => {
+  const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+  const [requestSent, setRequestSent] = useState<boolean>(false);
+  
+  // Callback function for the directions service
+  const directionsCallback = (
+    result: google.maps.DirectionsResult | null,
+    status: google.maps.DirectionsStatus
+  ) => {
+    if (status === 'OK' && result) {
+      setDirectionsResponse(result);
+    } else {
+      console.error(`Directions request failed for edge ${index} with status:`, status);
+    }
+    setRequestSent(true);
+  };
+  
+  return (
+    <>
+      {!requestSent && (
+        <DirectionsService
+          options={{
+            origin: { lat: fromNode.latitude, lng: fromNode.longitude },
+            destination: { lat: toNode.latitude, lng: toNode.longitude },
+            travelMode: google.maps.TravelMode.DRIVING,
+          }}
+          callback={directionsCallback}
+        />
+      )}
+      
+      {directionsResponse && (
+        <DirectionsRenderer
+          options={{
+            directions: directionsResponse,
+            suppressMarkers: true,
+            polylineOptions: {
+              strokeColor: '#FF0000',
+              strokeWeight: 3,
+              strokeOpacity: 0.8,
+            }
+          }}
+        />
+      )}
+    </>
+  );
 };
 
 const TransportationMap: React.FC<TransportationMapProps> = ({
@@ -143,7 +200,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
       setRouteCoordinates(coordinates);
       
       // If using Roads style, set up origin/destination for DirectionsService
-      if (data.lineStyle === 'Roads' && coordinates.length >= 2) {
+      // Only do this for regular routes, not for MST
+      if (data.lineStyle === 'Roads' && coordinates.length >= 2 && !data.isMST) {
         const originCoord = coordinates[0];
         const destCoord = coordinates[coordinates.length - 1];
         
@@ -152,7 +210,7 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
           setDirectionsRequest(true);
         }
       } else {
-        // If using StraightLine style, clear any directions
+        // If using StraightLine style or it's MST data, clear any directions
         setDirectionsResponse(null);
         setDirectionsRequest(false);
       }
@@ -276,7 +334,7 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
         )}
 
         {/* Render straight line if that style is selected */}
-        {shouldShowStraightLine && (
+        {shouldShowStraightLine && !routeData?.isMST && (
           <Polyline
             path={routeCoordinates}
             options={{
@@ -288,8 +346,184 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
           />
         )}
 
+        {/* Render MST (Minimum Spanning Tree) graph */}
+        {shouldShowRoute && routeData?.isMST && routeData?.edges && (
+          <>
+            {routeData.edges.map((edge, index) => {
+              // Get coordinates for each edge in the MST
+              const fromNode = getNodeLocation(edge.from);
+              const toNode = getNodeLocation(edge.to);
+              
+              if (fromNode && toNode) {
+                // For Roads style, use the Directions API to draw actual roads
+                if (lineStyle === 'Roads') {
+                  return (
+                    <EdgeDirectionsRenderer
+                      key={`mst-road-edge-${index}`}
+                      fromNode={fromNode}
+                      toNode={toNode}
+                      index={index}
+                    />
+                  );
+                }
+                
+                // For StraightLine style, draw direct lines
+                const fromCoord = { lat: fromNode.latitude, lng: fromNode.longitude };
+                const toCoord = { lat: toNode.latitude, lng: toNode.longitude };
+                
+                return (
+                  <Polyline
+                    key={`mst-edge-${index}`}
+                    path={[fromCoord, toCoord]}
+                    options={{
+                      strokeColor: '#FF0000', // Red color for MST edges
+                      strokeWeight: 3,
+                      strokeOpacity: 0.8,
+                      geodesic: true,
+                    }}
+                  />
+                );
+              }
+              return null;
+            })}
+            
+            {/* Render nodes for MST */}
+            {routeData.nodes.map((nodeId, index) => {
+              const node = getNodeLocation(nodeId);
+              if (node) {
+                const coord = { lat: node.latitude, lng: node.longitude };
+                return (
+                  <Marker
+                    key={`mst-node-${nodeId}`}
+                    position={coord}
+                    title={node.name}
+                    icon={{
+                      path: google.maps.SymbolPath.CIRCLE,
+                      scale: 6,
+                      fillColor: '#0000FF', // Blue color for MST nodes
+                      fillOpacity: 1,
+                      strokeWeight: 2,
+                      strokeColor: '#FFFFFF',
+                    }}
+                  />
+                );
+              }
+              return null;
+            })}
+          </>
+        )}
+
+        {/* Render public transportation routes */}
+        {shouldShowRoute && routeData?.isPublicTransport && routeData?.edges && 
+          routeData.edges.map((edge, index) => {
+            // Get coordinates for the edge
+            const fromNode = getNodeLocation(edge.from);
+            const toNode = getNodeLocation(edge.to);
+            
+            if (fromNode && toNode) {
+              const fromCoord = { lat: fromNode.latitude, lng: fromNode.longitude };
+              const toCoord = { lat: toNode.latitude, lng: toNode.longitude };
+              
+              // Different styling based on mode (bus or metro)
+              const isMetro = edge.mode === 'metro';
+              
+              return (
+                <Polyline
+                  key={`pt-edge-${index}`}
+                  path={[fromCoord, toCoord]}
+                  options={{
+                    strokeColor: isMetro ? '#0000FF' : '#FF6600', // Blue for metro, Orange for bus
+                    strokeWeight: isMetro ? 5 : 4,
+                    strokeOpacity: 0.8,
+                    geodesic: true,
+                    // Use dashed line for bus routes if in straight line mode
+                    icons: !isMetro && lineStyle === 'StraightLine' ? [
+                      {
+                        icon: {
+                          path: 'M 0,-1 0,1',
+                          strokeOpacity: 1,
+                          scale: 3
+                        },
+                        offset: '0',
+                        repeat: '10px'
+                      }
+                    ] : undefined
+                  }}
+                />
+              );
+            }
+            return null;
+          })
+        }
+
+        {/* Render station/stop markers for public transportation */}
+        {shouldShowRoute && routeData?.isPublicTransport && routeData?.nodes && 
+          routeCoordinates.map((coord, index) => {
+            // Find if this is a bus stop or metro station by checking the edges
+            let stationType = 'default'; // default, bus, or metro
+            let routeNumber = '';
+            
+            if (routeData.edges && index < routeCoordinates.length - 1) {
+              const nodeId = routeData.nodes[index];
+              const nextNodeId = routeData.nodes[index + 1];
+              
+              // Find the edge that connects this node to the next
+              const edge = routeData.edges.find(e => 
+                (e.from === nodeId && e.to === nextNodeId) || 
+                (e.to === nodeId && e.from === nextNodeId)
+              );
+              
+              if (edge) {
+                stationType = edge.mode || 'default';
+                routeNumber = edge.route || '';
+              }
+            } else if (routeData.edges && index > 0) {
+              // For last node, check previous edge
+              const nodeId = routeData.nodes[index];
+              const prevNodeId = routeData.nodes[index - 1];
+              
+              // Find the edge that connects this node to the previous
+              const edge = routeData.edges.find(e => 
+                (e.from === prevNodeId && e.to === nodeId) || 
+                (e.to === prevNodeId && e.from === nodeId)
+              );
+              
+              if (edge) {
+                stationType = edge.mode || 'default';
+                routeNumber = edge.route || '';
+              }
+            }
+            
+            return (
+              <Marker
+                key={`pt-node-${index}`}
+                position={coord}
+                label={(index === 0 || index === routeCoordinates.length - 1) ? 
+                        (index === 0 ? 'A' : 'B') : // Origin or destination
+                        undefined} // Intermediate points
+                icon={{
+                  path: stationType === 'metro' ? 
+                    google.maps.SymbolPath.CIRCLE : // Circle for metro stations
+                    google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, // Arrow for bus stops
+                  scale: (index === 0 || index === routeCoordinates.length - 1) ? 8 : 
+                         (stationType === 'metro' ? 7 : 5),
+                  fillColor: (index === 0) ? '#00FF00' : 
+                             (index === routeCoordinates.length - 1) ? '#FF0000' : 
+                             (stationType === 'metro') ? '#0000FF' : '#FF6600',
+                  fillOpacity: 1,
+                  strokeWeight: 2,
+                  strokeColor: '#FFFFFF',
+                  // Rotate bus stop icons to match route direction if not origin/destination
+                  rotation: (stationType === 'bus' && index !== 0 && 
+                            index !== routeCoordinates.length - 1) ? 90 : 0,
+                }}
+              />
+            );
+          })
+        }
+        
         {/* Render markers for route nodes */}
-        {shouldShowRoute && routeCoordinates.map((coord, index) => (
+        {shouldShowRoute && !routeData?.isPublicTransport && routeCoordinates.map((coord, index) => (
           <Marker
             key={`node-${index}`}
             position={coord}
@@ -306,6 +540,39 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
             }}
           />
         ))}
+
+        {/* Render info about the route */}
+        {shouldShowRoute && routeData && (
+          <InfoWindow
+            position={routeCoordinates[0]}
+            options={{
+              pixelOffset: new google.maps.Size(0, -50)
+            }}
+          >
+            <div style={{ padding: '8px', maxWidth: '200px' }}>
+              <Typography variant="subtitle1" fontWeight="bold">Route Information</Typography>
+              <Typography variant="body2">
+                Distance: {routeData.totalDistance?.toFixed(1)} km
+              </Typography>
+              <Typography variant="body2">
+                Est. Time: {routeData.totalTime?.toFixed(0)} min
+              </Typography>
+              {routeData.isPublicTransport && routeData.steps && (
+                <div>
+                  <Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>
+                    Public Transport:
+                  </Typography>
+                  {routeData.steps.map((step, idx) => (
+                    <Typography key={idx} variant="caption" display="block">
+                      {step.mode === 'metro' ? '🚇 Metro' : '🚌 Bus'} {step.route}: 
+                      {step.start} → {step.end} ({step.stops} stops)
+                    </Typography>
+                  ))}
+                </div>
+              )}
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </Box>
   );

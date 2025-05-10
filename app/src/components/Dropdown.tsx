@@ -19,6 +19,7 @@ interface DropdownProps {
     timeOfDay: string;
     route: string;
     lines: string;
+    Algo: string;
   }) => void;
   onFetchRoute?: (data?: any) => void;
   currentRouteData?: any;  // To store current route data if available
@@ -33,12 +34,12 @@ const Dropdown: React.FC<DropdownProps> = ({
   // Set default values
   const [Origin, setOrigin] = useState('1');
   const [Destination, setDestination] = useState('2');
-  const [Time, setTime] = useState('Morning');
+  const [Time, setTime] = useState('morning');
   const [Routes, setRoute] = useState('MST');
   const [Lines, setLine] = useState('Roads');
   // Cached route data for redrawing with different styles
   const [cachedRouteData, setCachedRouteData] = useState<any>(null);
-  
+  const [Algo, setAlgo] = useState('ASTAR');
   // Notify parent component when values change
   useEffect(() => {
     if (onValuesChange) {
@@ -47,7 +48,8 @@ const Dropdown: React.FC<DropdownProps> = ({
         destination: Destination,
         timeOfDay: Time,
         route: Routes,
-        lines: Lines
+        lines: Lines,
+        algo: Algo
       });
     }
   }, [Origin, Destination, Time, Routes, Lines, onValuesChange]);
@@ -75,7 +77,9 @@ const Dropdown: React.FC<DropdownProps> = ({
   const handleRouteChange = (event: SelectChangeEvent) => {
     setRoute(event.target.value);
   };
-  
+  const handleAlgoChange = (event: SelectChangeEvent) => {
+    setAlgo(event.target.value);
+  }
   const handleLineChange = (event: SelectChangeEvent) => {
     const newLineStyle = event.target.value;
     setLine(newLineStyle);
@@ -104,68 +108,252 @@ const Dropdown: React.FC<DropdownProps> = ({
         origin: Origin,
         destination: Destination,
         timeOfDay: Time,
-        lineStyle: Lines  // Include line style preference
+        routeType: Routes,
+        lineStyle: Lines,
+        algorithm: Algo
       });
       
-      const url = `/api/flow/route/astar?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}&period=${encodeURIComponent(Time)}`;
-      console.log('Request URL:', url);
-  
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
+      // Convert time period to lowercase to match backend expectations
+      const lowerCasePeriod = Time.toLowerCase();
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries([...response.headers]));
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch route: ${response.status} ${response.statusText}`);
-      }
-      
-      // Get the response text and parse it
-      const responseText = await response.text();
-      console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
-      
-      // Parse the JSON response
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('Successfully parsed route data:', data);
-      } catch (jsonError) {
-        console.error('Failed to parse JSON:', jsonError);
-        throw new Error('Response is not valid JSON');
-      }
+      let url, response;
 
-      // Extract route nodes in order
-      if (data && data.edges && Array.isArray(data.edges)) {
-        // Create ordered list of nodes (from origin to destination)
-        const orderedNodes = extractOrderedNodes(data.edges);
-        console.log('Ordered route nodes:', orderedNodes);
+      // Use different API endpoints based on the route type
+      if (Routes === 'Public') {
+        // For public transportation, use the transportation API
+        url = `/api/transportation/itinerary?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}`;
+        console.log('Public transportation request URL:', url);
         
-        // Additional route information with line style preference
-        const routeInfo = {
-          nodes: orderedNodes,
-          totalDistance: data.total_distance,
-          totalTime: data.total_time,
-          edges: data.edges,
-          lineStyle: Lines  // Include the current line style preference
-        };
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
         
-        console.log('Processed route information with line style:', routeInfo);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch public transportation route: ${response.status} ${response.statusText}`);
+        }
+
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed public transportation data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+
+        // Public transportation API returns a different format, so we need to convert it
+        if (data && data.steps && Array.isArray(data.steps)) {
+          // Extract route information from the steps
+          const edges = [];
+          const orderedNodes = [];
+          let totalDistance = 0;
+          let totalTime = 0; // Estimate based on stops
+          
+          // Process each leg of the journey
+          data.steps.forEach((step, index) => {
+            // Add the path nodes from each step
+            if (step.path && Array.isArray(step.path)) {
+              // First node of first step is already the origin
+              if (index === 0) {
+                orderedNodes.push(step.path[0]);
+              }
+              
+              // Add the remaining nodes and create edges
+              for (let i = (index === 0 ? 1 : 0); i < step.path.length; i++) {
+                const from = step.path[i - 1];
+                const to = step.path[i];
+                orderedNodes.push(to);
+                edges.push({ from, to, mode: step.mode, route: step.route });
+              }
+              
+              // Estimate distance and time based on number of stops
+              // (This is a simplification; real data would be better)
+              totalDistance += step.stops * 2; // Rough estimate: 2km per stop
+              totalTime += step.stops * 5;     // Rough estimate: 5 minutes per stop
+            }
+          });
+          
+          // Create route information object
+          const routeInfo = {
+            nodes: orderedNodes,
+            totalDistance: totalDistance,
+            totalTime: totalTime,
+            edges: edges,
+            lineStyle: Lines,
+            isPublicTransport: true,
+            steps: data.steps // Keep original steps for detailed display
+          };
+          
+          console.log('Processed public transport information:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid public transport data format');
+        }
+      } else if (Routes === 'MST') {
+        // For MST routes, use the infrastructure API
+        url = `/api/planner/period/${encodeURIComponent(lowerCasePeriod)}`;
+        console.log('MST infrastructure request URL:', url);
         
-        // Cache the route data for future style changes
-        setCachedRouteData(routeInfo);
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
         
-        // Pass the processed route data to parent component
-        if (onFetchRoute) {
-          onFetchRoute(routeInfo);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch MST route: ${response.status} ${response.statusText}`);
         }
         
-        return routeInfo;
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+        
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed MST data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+
+        // For MST, we just directly use the edges from the JSON response
+        if (data && data.edges && Array.isArray(data.edges)) {
+          // Extract all unique nodes from the edges
+          const uniqueNodes = new Set<string>();
+          data.edges.forEach(edge => {
+            uniqueNodes.add(edge.from);
+            uniqueNodes.add(edge.to);
+          });
+          
+          // Additional route information with line style preference
+          const routeInfo = {
+            // All unique nodes in the MST
+            nodes: Array.from(uniqueNodes),
+            totalDistance: data.total_distance || 0,
+            totalTime: data.total_time || 0,
+            // Pass the raw edges directly without modification
+            edges: data.edges,
+            lineStyle: Lines,
+            // Special flag to indicate this is an MST, not a path
+            isMST: true,
+            // Include raw data to ensure we're using exactly what came from the API
+            rawData: data
+          };
+          
+          console.log('Processed MST information:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid MST data format: missing edges array');
+        }
       } else {
-        throw new Error('Invalid route data format: missing edges array');
+        // For road-based routes (Private, Emergency), use the flow API with the selected algorithm
+        // Map the dropdown value to the correct backend API endpoint
+        let algorithmEndpoint;
+        if (Algo === 'dijkstra') {
+          algorithmEndpoint = 'dijkstra';  // Map "DJ" to "dijkstra" for backend API
+        } else {
+          algorithmEndpoint = Algo.toLowerCase();  // For other algorithms like "ASTAR"
+        }
+        
+        console.log(`Using algorithm: ${Algo} (endpoint: ${algorithmEndpoint})`);
+        
+        // Use the full backend URL instead of relative URL
+        url = `http://127.0.0.1:5000/flow/route/${algorithmEndpoint}?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}&period=${encodeURIComponent(lowerCasePeriod)}`;
+        console.log('Road route request URL:', url);
+      
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch route: ${response.status} ${response.statusText}`);
+        }
+        
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+        
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed route data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+
+        // Extract route nodes in order
+        if (data && data.edges && Array.isArray(data.edges)) {
+          // Create ordered list of nodes (from origin to destination)
+          const orderedNodes = extractOrderedNodes(data.edges);
+          console.log('Ordered route nodes:', orderedNodes);
+          
+          // Additional route information with line style preference
+          const routeInfo = {
+            nodes: orderedNodes,
+            totalDistance: data.total_distance,
+            totalTime: data.total_time,
+            edges: data.edges,
+            lineStyle: Lines,
+            isPublicTransport: false
+          };
+          
+          console.log('Processed route information with line style:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid route data format: missing edges array');
+        }
       }
     } catch (error) {
       console.error('Error fetching route:', error);
@@ -290,10 +478,10 @@ const Dropdown: React.FC<DropdownProps> = ({
               onChange={handleTimeChange}
               sx={selectStyle}
             >
-              <MenuItem value="Morning">Morning</MenuItem>
-              <MenuItem value="Afternoon">Afternoon</MenuItem>
-              <MenuItem value="Evening">Evening</MenuItem>
-              <MenuItem value="Night">Night</MenuItem>
+              <MenuItem value="morning">morning</MenuItem>
+              <MenuItem value="afternoon">afternoon</MenuItem>
+              <MenuItem value="evening">evening</MenuItem>
+              <MenuItem value="night">night</MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -327,13 +515,13 @@ const Dropdown: React.FC<DropdownProps> = ({
               sx={selectStyle}
             >
               <MenuItem value="StraightLine">
-                Straight Line
+                Straight Line 
                 <Typography variant="caption" display="block" color="text.secondary">
                   Draw direct lines between nodes
                 </Typography>
               </MenuItem>
               <MenuItem value="Roads">
-                Roads
+                Roads 
                 <Typography variant="caption" display="block" color="text.secondary">
                   Follow actual road paths
                 </Typography>
@@ -341,6 +529,23 @@ const Dropdown: React.FC<DropdownProps> = ({
             </Select>
           </FormControl>
         </Grid>
+        <Grid item xs={24} sm={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel id="Algo-label" sx={{ fontSize: '1.2rem' }}>Algorithm</InputLabel>
+            <Select
+              labelId="Algo-label"
+              id="Algo-select"
+              value={Algo}
+              label="Algo"
+              onChange={handleAlgoChange}
+              sx={selectStyle}
+            >
+              <MenuItem value="ASTAR">ASTAR</MenuItem>
+              <MenuItem value="dijkstra">dijkstra</MenuItem>
+              
+            </Select>
+          </FormControl>
+               </Grid>
         {/* Fetch Route Button */}
         <Grid item xs={24} sm={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
           <Button 
