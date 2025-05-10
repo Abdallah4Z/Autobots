@@ -455,7 +455,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
       <Grid container spacing={8}>
         {/* Location */}
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
             <InputLabel id="location-label" sx={{ fontSize: '1.2rem' }}>Origin</InputLabel>
             <Select
@@ -496,7 +496,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
 
         {/* Category */}
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
             <InputLabel id="category-label" sx={{ fontSize: '1.2rem' }}>Destination</InputLabel>
             <Select
@@ -537,7 +537,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
 
         {/* Time Range */}
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
             <InputLabel id="time-range-label" sx={{ fontSize: '1.2rem' }}>TimeOFday</InputLabel>
             <Select
@@ -555,7 +555,7 @@ const Dropdown: React.FC<DropdownProps> = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
             <InputLabel id="Route-label" sx={{ fontSize: '1.2rem' }}>Route</InputLabel>
             <Select
@@ -573,7 +573,7 @@ const Dropdown: React.FC<DropdownProps> = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
             <InputLabel id="Line-label" sx={{ fontSize: '1.2rem' }}>Line</InputLabel>
             <Select
@@ -599,7 +599,7 @@ const Dropdown: React.FC<DropdownProps> = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
             <InputLabel id="Algo-label" sx={{ fontSize: '1.2rem' }}>Algorithm</InputLabel>
             <Select
@@ -616,7 +616,7 @@ const Dropdown: React.FC<DropdownProps> = ({
             </Select>
           </FormControl>
                </Grid>
-               <Grid item xs={24} sm={12} md={6}>
+               <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
             <InputLabel id="EM-label" sx={{ fontSize: '1.2rem' }}>Emergency</InputLabel>
             <Select
@@ -635,7 +635,7 @@ const Dropdown: React.FC<DropdownProps> = ({
           </FormControl>
                </Grid>
         {/* Fetch Route Button */}
-        <Grid item xs={24} sm={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
+        <Grid item xs={18} sm={8} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
           <Button 
             variant="contained" 
             color="primary" 
