@@ -1,110 +1,118 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TransportationMap from '../components/TransportationMap';
+import Dropdown from '../components/Dropdown';
 import '../style/transportation-map.css';
+import { Box, Button, Typography } from '@mui/material';
+import { cityData } from './cityData';
 
-// Cairo facilities data from the CSV file
-const CAIRO_FACILITIES = [
-  {
-    id: "F1",
-    name: "Cairo International Airport",
-    type: "airport" as const,
-    latitude: 30.11,
-    longitude: 31.41
-  },
-  {
-    id: "F2",
-    name: "Ramses Railway Station",
-    type: "train-station" as const,
-    latitude: 30.06,
-    longitude: 31.25
-  },
-  {
-    id: "F3",
-    name: "Cairo University",
-    type: "other" as const,
-    latitude: 30.03,
-    longitude: 31.21
-  },
-  {
-    id: "F4",
-    name: "Al-Azhar University",
-    type: "facility" as const,
-    latitude: 30.05,
-    longitude: 31.26
-  },
-  {
-    id: "F5",
-    name: "Egyptian Museum",
-    type: "bus-stop" as const,
-    latitude: 30.048331,
-    longitude: 31.233659
-  },
-  {
-    id: "F6",
-    name: "Cairo International Stadium",
-    type: "metro-station" as const,
-    latitude: 30.07,
-    longitude: 31.3
-  },
-  {
-    id: "F7",
-    name: "Smart Village",
-    type: "bus-terminal" as const,
-    latitude: 30.07,
-    longitude: 30.97
-  },
-  {
-    id: "F8",
-    name: "Cairo Festival City",
-    type: "point-of-interest" as const,
-    latitude: 30.03,
-    longitude: 31.4
-  },
-  {
-    id: "F9",
-    name: "Qasr El Aini Hospital",
-    type: "ferry-terminal" as const,
-    latitude: 30.03,
-    longitude: 31.23
-  },
-  {
-    id: "F10",
-    name: "Maadi Military Hospital",
-    type: "facility" as const,
-    latitude: 29.95,
-    longitude: 31.25
-  }
-];
+interface Waypoint {
+  location: {
+    lat: number;
+    lng: number;
+  };
+  stopover: boolean;
+}
+
+interface RouteInfo {
+  nodes: string[];
+  totalDistance: number;
+  totalTime: number;
+}
+
+// Default starting waypoints if needed
+const DEFAULT_WAYPOINTS: Waypoint[] = [];
+
+// Default origin and destination
+const DEFAULT_ORIGIN = { lat: 30.05, lng: 31.23 }; // Cairo center
+const DEFAULT_DESTINATION = { lat: 30.06, lng: 31.25 }; // Nearby location
 
 const TransportationDashboard: React.FC = () => {
-  const [coordinates, setCoordinates] = useState<{longitude: number, latitude: number} | null>(null);
-
-  // Handle map click event
-  const handleMapClick = (longitude: number, latitude: number) => {
-    setCoordinates({ longitude, latitude });
+  const [showDebugger, setShowDebugger] = useState(false);
+  const [waypoints, setWaypoints] = useState<Waypoint[]>(DEFAULT_WAYPOINTS);
+  const [origin, setOrigin] = useState<{ lat: number; lng: number }>(DEFAULT_ORIGIN);
+  const [destination, setDestination] = useState<{ lat: number; lng: number }>(DEFAULT_DESTINATION);
+  const [showRoute, setShowRoute] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  
+  // Handler for route data from Dropdown component
+  const handleRouteData = (data: RouteInfo | undefined) => {
+    if (!data || !data.nodes || data.nodes.length < 2) {
+      console.error("Invalid route data received:", data);
+      return;
+    }
     
-    // You can perform additional actions with the coordinates here
-    // For example, sending them to an API or storing them in a database
-  };
-
-  return (
-    <div className="map-only-container">
-      <TransportationMap
-        locations={CAIRO_FACILITIES}
-        initialViewState={{
-          longitude: 31.23, // Centered on Cairo
-          latitude: 30.05,
-          zoom: 11
-        }}
-        onMapClick={handleMapClick}
-      />
+    setRouteInfo(data);
+    console.log("Route data received:", data);
+    
+    // Convert node IDs to coordinates
+    try {
+      const nodeCoordinates = convertNodesToCoordinates(data.nodes);
       
-      {/* Optional: Display coordinates outside of map for copying/pasting */}
-      {coordinates && (
-        <div className="coordinates-display">
-          <p>Longitude: {coordinates.longitude.toFixed(6)}, Latitude: {coordinates.latitude.toFixed(6)}</p>
-        </div>
-      )}
+      // Set origin (first node)
+      if (nodeCoordinates.length > 0) {
+        setOrigin(nodeCoordinates[0]);
+      }
+      
+      // Set destination (last node)
+      if (nodeCoordinates.length > 1) {
+        setDestination(nodeCoordinates[nodeCoordinates.length - 1]);
+      }
+      
+      // Set waypoints (middle nodes)
+      if (nodeCoordinates.length > 2) {
+        const waypointsArray = nodeCoordinates.slice(1, -1).map(coord => ({
+          location: coord,
+          stopover: true
+        }));
+        setWaypoints(waypointsArray);
+      } else {
+        setWaypoints([]);
+      }
+      
+      // Enable route display
+      setShowRoute(true);
+      
+    } catch (error) {
+      console.error("Error processing route data:", error);
+    }
+  };
+  
+  // Helper function to convert node IDs to lat/lng coordinates
+  const convertNodesToCoordinates = (nodes: string[]): Array<{ lat: number; lng: number }> => {
+    return nodes.map(nodeId => {
+      // Find the node in cityData
+      const location = cityData.find(loc => loc.id === nodeId);
+      
+      if (!location) {
+        console.warn(`Location not found for node ID: ${nodeId}`);
+        // Return a default coordinate if not found
+        return { lat: 30.05, lng: 31.23 };
+      }
+      
+      return { 
+        lat: location.coordinates.lat, 
+        lng: location.coordinates.lng 
+      };
+    });
+  };
+  
+  return (
+    <div className="dashboard-container">
+      
+      <div className="map-container">
+        <TransportationMap
+          initialViewState={{
+            longitude: 31.23, // Centered on Cairo
+            latitude: 30.05,
+            zoom: 11
+          }}
+          waypoints={waypoints}
+          origin={origin}
+          destination={destination}
+          defaultShowRoute={showRoute}
+          onFetchRoute={handleRouteData} // Pass the route data handler
+        />
+      </div>
     </div>
   );
 };

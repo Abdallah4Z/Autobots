@@ -26,6 +26,7 @@
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.11.1",
     "maplibre-gl": "^5.4.0",
+    "mui": "^0.0.1",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
