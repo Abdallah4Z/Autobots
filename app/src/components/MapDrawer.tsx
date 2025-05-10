@@ -57,7 +57,7 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
   };
 
   // Hover leave handler - simplified
-  const handleMouseLeave = (delay=1300) => {
+  const handleMouseLeave = () => {
     // Don't trigger leave during transitions
     if (isTransitioning.current) return;
     
@@ -67,7 +67,7 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
     setIsOpen(false);
     setTimeout(() => {
       isTransitioning.current = false;
-    }, delay);
+    }, 250);
   };
   
   // Check if mouse is inside either hover area or drawer content

@@ -38,10 +38,10 @@ def dijkstra_route():
     if not origin or not dest:
         return jsonify({"error": "Missing origin or destination"}), 400
     try:
-        path = find_dijkstra_route(origin, dest,period)
+        path, graph = find_dijkstra_route(origin, dest, period)
         edges = path_to_edges(path)
-        total_distance = calculate_total_distance(path)
-        total_time = calculate_total_time(path)
+        total_distance = calculate_total_distance(path, graph)
+        total_time = calculate_total_time(path, graph)
         
         return jsonify({
             "edges": edges, 
