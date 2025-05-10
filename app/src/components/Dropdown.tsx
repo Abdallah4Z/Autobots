@@ -19,7 +19,8 @@ interface DropdownProps {
     timeOfDay: string;
     route: string;
     lines: string;
-    Algo: string;
+    algo: string;
+    Emergency: string;
   }) => void;
   onFetchRoute?: (data?: any) => void;
   currentRouteData?: any;  // To store current route data if available
@@ -37,6 +38,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   const [Time, setTime] = useState('morning');
   const [Routes, setRoute] = useState('MST');
   const [Lines, setLine] = useState('Roads');
+  const [Em, setEm] = useState('None');
   // Cached route data for redrawing with different styles
   const [cachedRouteData, setCachedRouteData] = useState<any>(null);
   const [Algo, setAlgo] = useState('ASTAR');
@@ -49,10 +51,11 @@ const Dropdown: React.FC<DropdownProps> = ({
         timeOfDay: Time,
         route: Routes,
         lines: Lines,
-        algo: Algo
+        algo: Algo,
+        Emergency:Em
       });
     }
-  }, [Origin, Destination, Time, Routes, Lines, onValuesChange]);
+  }, [Origin, Destination, Time, Routes, Lines, Algo,Em,onValuesChange]);
 
   // Update cached route data when received from parent
   useEffect(() => {
@@ -69,7 +72,9 @@ const Dropdown: React.FC<DropdownProps> = ({
   const handleDestinationChange = (event: SelectChangeEvent) => {
     setDestination(event.target.value);
   };
-
+  const handleEmergencyChange = (event: SelectChangeEvent) => {
+    setEm(event.target.value);
+  };
   const handleTimeChange = (event: SelectChangeEvent) => {
     setTime(event.target.value);
   };
@@ -110,7 +115,8 @@ const Dropdown: React.FC<DropdownProps> = ({
         timeOfDay: Time,
         routeType: Routes,
         lineStyle: Lines,
-        algorithm: Algo
+        algorithm: Algo,
+        emergency: Em
       });
       
       // Convert time period to lowercase to match backend expectations
@@ -118,8 +124,72 @@ const Dropdown: React.FC<DropdownProps> = ({
       
       let url, response;
 
-      // Use different API endpoints based on the route type
-      if (Routes === 'Public') {
+      // Use different API endpoints based on the route type and emergency status
+      
+      if (Em !== 'None') {
+        // For emergency routes, use the emergency API
+        const emType = Em.toLowerCase(); // Convert to lowercase for the API
+        url = `http://localhost:5000/emergency/route?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}&type=${emType}`;
+        console.log('Emergency route request URL:', url);
+        
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch emergency route: ${response.status} ${response.statusText}`);
+        }
+        
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw emergency response (first 500 chars):', responseText.substring(0, 500));
+        
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed emergency route data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+        
+        // Process the emergency route data
+        if (data && data.edges && Array.isArray(data.edges)) {
+          const orderedNodes = extractOrderedNodes(data.edges);
+          console.log('Ordered emergency route nodes:', orderedNodes);
+          
+          const routeInfo = {
+            nodes: orderedNodes,
+            totalDistance: data.total_distance,
+            totalTime: data.total_time,
+            edges: data.edges,
+            lineStyle: Lines,
+            isEmergencyRoute: true,
+            emergencyType: Em
+          };
+          
+          console.log('Processed emergency route information:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid emergency route data format');
+        }
+      } else if (Routes === 'Public') {
         // For public transportation, use the transportation API
         url = `/api/transportation/itinerary?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}`;
         console.log('Public transportation request URL:', url);
@@ -543,6 +613,24 @@ const Dropdown: React.FC<DropdownProps> = ({
               <MenuItem value="ASTAR">ASTAR</MenuItem>
               <MenuItem value="dijkstra">dijkstra</MenuItem>
               
+            </Select>
+          </FormControl>
+               </Grid>
+               <Grid item xs={24} sm={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel id="EM-label" sx={{ fontSize: '1.2rem' }}>Emergency</InputLabel>
+            <Select
+              labelId="EM-label"
+              id="EM-select"
+              value={Em}
+              label="EM"
+              onChange={handleEmergencyChange}
+              sx={selectStyle}
+            >
+              <MenuItem value="None">None</MenuItem>
+              <MenuItem value="Ambulance">Ambulance</MenuItem>
+              <MenuItem value="police">police</MenuItem>
+              <MenuItem value="fire_truck">fire_truck</MenuItem>
             </Select>
           </FormControl>
                </Grid>
