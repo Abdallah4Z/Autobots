@@ -18,15 +18,17 @@ interface DropdownProps {
     destination: string;
     timeOfDay: string;
     route: string;
-    lines:string;
+    lines: string;
   }) => void;
   onFetchRoute?: (data?: any) => void;
+  currentRouteData?: any;  // To store current route data if available
 }
 
 const Dropdown: React.FC<DropdownProps> = ({ 
   className,
   onValuesChange,
-  onFetchRoute 
+  onFetchRoute,
+  currentRouteData
 }) => {
   // Set default values
   const [Origin, setOrigin] = useState('1');
@@ -34,6 +36,9 @@ const Dropdown: React.FC<DropdownProps> = ({
   const [Time, setTime] = useState('Morning');
   const [Routes, setRoute] = useState('MST');
   const [Lines, setLine] = useState('Roads');
+  // Cached route data for redrawing with different styles
+  const [cachedRouteData, setCachedRouteData] = useState<any>(null);
+  
   // Notify parent component when values change
   useEffect(() => {
     if (onValuesChange) {
@@ -42,11 +47,17 @@ const Dropdown: React.FC<DropdownProps> = ({
         destination: Destination,
         timeOfDay: Time,
         route: Routes,
-        lines:Lines
-        
+        lines: Lines
       });
     }
-  }, [Origin, Destination, Time,Routes,Lines, onValuesChange]);
+  }, [Origin, Destination, Time, Routes, Lines, onValuesChange]);
+
+  // Update cached route data when received from parent
+  useEffect(() => {
+    if (currentRouteData) {
+      setCachedRouteData(currentRouteData);
+    }
+  }, [currentRouteData]);
 
   // Handlers
   const handleOriginChange = (event: SelectChangeEvent) => {
@@ -60,12 +71,28 @@ const Dropdown: React.FC<DropdownProps> = ({
   const handleTimeChange = (event: SelectChangeEvent) => {
     setTime(event.target.value);
   };
+  
   const handleRouteChange = (event: SelectChangeEvent) => {
     setRoute(event.target.value);
   };
+  
   const handleLineChange = (event: SelectChangeEvent) => {
-    setLine(event.target.value);
+    const newLineStyle = event.target.value;
+    setLine(newLineStyle);
+    
+    // If we have cached route data, update the visualization immediately
+    if (cachedRouteData && onFetchRoute) {
+      // Add the line style to the route data
+      const updatedRouteData = {
+        ...cachedRouteData,
+        lineStyle: newLineStyle
+      };
+      
+      // Pass the updated route data back to parent component to redraw
+      onFetchRoute(updatedRouteData);
+    }
   };
+  
   const selectStyle = {
     fontSize: '1.2rem',
     height: '3.5rem',
@@ -76,10 +103,11 @@ const Dropdown: React.FC<DropdownProps> = ({
       console.log('Fetching route data with parameters:', {
         origin: Origin,
         destination: Destination,
-        timeOfDay: Time
+        timeOfDay: Time,
+        lineStyle: Lines  // Include line style preference
       });
       
-      const url = `/api/flow/route/astar?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}`;
+      const url = `/api/flow/route/astar?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}&period=${encodeURIComponent(Time)}`;
       console.log('Request URL:', url);
   
       const response = await fetch(url, {
@@ -116,14 +144,19 @@ const Dropdown: React.FC<DropdownProps> = ({
         const orderedNodes = extractOrderedNodes(data.edges);
         console.log('Ordered route nodes:', orderedNodes);
         
-        // Additional route information
+        // Additional route information with line style preference
         const routeInfo = {
           nodes: orderedNodes,
           totalDistance: data.total_distance,
-          totalTime: data.total_time
+          totalTime: data.total_time,
+          edges: data.edges,
+          lineStyle: Lines  // Include the current line style preference
         };
         
-        console.log('Processed route information:', routeInfo);
+        console.log('Processed route information with line style:', routeInfo);
+        
+        // Cache the route data for future style changes
+        setCachedRouteData(routeInfo);
         
         // Pass the processed route data to parent component
         if (onFetchRoute) {
@@ -279,8 +312,6 @@ const Dropdown: React.FC<DropdownProps> = ({
               <MenuItem value="Private">Private</MenuItem>
               <MenuItem value="Public">Public</MenuItem>
               <MenuItem value="Emergency">Emergency</MenuItem>
-
-              
             </Select>
           </FormControl>
         </Grid>
@@ -295,11 +326,18 @@ const Dropdown: React.FC<DropdownProps> = ({
               onChange={handleLineChange}
               sx={selectStyle}
             >
-              <MenuItem value="StraightLine">StraightLine</MenuItem>
-              <MenuItem value="Roads">Roads</MenuItem>
-              
-
-              
+              <MenuItem value="StraightLine">
+                Straight Line
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Draw direct lines between nodes
+                </Typography>
+              </MenuItem>
+              <MenuItem value="Roads">
+                Roads
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Follow actual road paths
+                </Typography>
+              </MenuItem>
             </Select>
           </FormControl>
         </Grid>
