@@ -34,9 +34,4 @@ cd backend/src
 python app.py
 ```
 
----
 
-## ❓ Need Help?
-If you encounter any issues during setup or development, feel free to reach out!
-
----
