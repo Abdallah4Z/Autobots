@@ -95,8 +95,7 @@ const TransportationDashboard: React.FC = () => {
       };
     });
   };
-  
-  return (
+    return (
     <div className="dashboard-container">
       
       <div className="map-container">
@@ -111,6 +110,7 @@ const TransportationDashboard: React.FC = () => {
           destination={destination}
           defaultShowRoute={showRoute}
           onFetchRoute={handleRouteData} // Pass the route data handler
+          timeOfDay={routeInfo?.timeOfDay || 'morning'} // Pass time of day for map styling
         />
       </div>
     </div>
