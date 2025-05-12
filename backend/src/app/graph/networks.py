@@ -119,7 +119,7 @@ class TransportationNetwork:
             u, v = r['from'], r['to']
             dist, cap, cond = r['dist_km'], r['cap'], r['cond']
             flow = self.flow.get((u, v), {}).get(period, 0)
-            weight = dist * (1 + flow/cap)
+            weight = dist * (flow/cap)
             G.add_edge(u, v, weight=weight, dist_km=dist, capacity=cap, flow=flow, condition=cond)
         return G
 
