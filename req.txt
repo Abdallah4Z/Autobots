@@ -1,0 +1,7 @@
+
+flask
+maplibre-gl==0.1.0
+
+json
+base64
+io

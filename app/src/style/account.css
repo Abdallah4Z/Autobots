@@ -1,0 +1,237 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #fafafa;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  /* Container */
+  .account-container {
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    width: 900px;
+    max-width: 900px;
+    padding: 40px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  /* Header */
+  .account-header {
+    text-align: center;
+  }
+  
+  .account-header h1 {
+    color: #d32f2f;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .account-header p {
+    color: #555;
+    font-size: 1rem;
+  }
+  
+  /* Profile Section */
+  .profile-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .profile-photo-container {
+    position: relative;
+  }
+  
+  .profile-photo {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #d32f2f;
+    padding: 4px;
+    background: white;
+  }
+  
+  .photo-upload-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #d32f2f;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .photo-upload-btn:hover {
+    background-color: #b71c1c;
+  }
+  
+  .photo-upload-input {
+    display: none;
+  }
+  
+  /* Form Section */
+  .account-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #444;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: white;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.1);
+    outline: none;
+  }
+  
+  /* Action Buttons */
+  .account-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    grid-column: 1 / -1;
+  }
+  
+  .btn {
+    padding: 0.9rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 140px;
+  }
+  
+  .btn-primary {
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+  }
+  
+  .btn-primary:hover {
+    background-color: #b71c1c;
+  }
+  
+  .btn-secondary {
+    background-color: transparent;
+    color: #333;
+    border: 1px solid #ccc;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #f9f9f9;
+  }
+  
+
+  .account-details-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .detail-label {
+    font-weight: 500;
+    color: #777;
+  }
+  
+  .detail-value {
+    color: #222;
+    font-weight: 500;
+  }
+ 
+  .edit-btn {
+    margin-top: 2rem;
+    width: 100%;
+  }
+
+  .danger-zone {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+  }
+  
+  .danger-zone h3 {
+    color: #d32f2f;
+    margin-bottom: 1rem;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .account-container {
+      padding: 1.5rem;
+    }
+  
+    .account-form {
+      grid-template-columns: 1fr;
+    }
+  
+    .account-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .btn {
+      width: 100%;
+    }
+  
+    .account-details-view {
+      grid-template-columns: 1fr;
+    }
+  
+    .detail-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+  

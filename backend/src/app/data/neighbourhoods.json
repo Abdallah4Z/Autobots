@@ -1,0 +1,17 @@
+[
+  { "id": 1,  "name": "Maadi",                      "population": 250000, "type": "Residential", "x": 31.25, "y": 29.96 },
+  { "id": 2,  "name": "Nasr City",                 "population": 500000, "type": "Mixed",       "x": 31.34, "y": 30.06 },
+  { "id": 3,  "name": "Downtown Cairo",            "population": 100000, "type": "Business",    "x": 31.24, "y": 30.04 },
+  { "id": 4,  "name": "New Cairo",                 "population": 300000, "type": "Residential", "x": 31.47, "y": 30.03 },
+  { "id": 5,  "name": "Heliopolis",                "population": 200000, "type": "Mixed",       "x": 31.32, "y": 30.09 },
+  { "id": 6,  "name": "Zamalek",                   "population":  50000, "type": "Residential", "x": 31.22, "y": 30.06 },
+  { "id": 7,  "name": "6th October City",          "population": 400000, "type": "Mixed",       "x": 30.98, "y": 29.93 },
+  { "id": 8,  "name": "Giza",                      "population": 550000, "type": "Mixed",       "x": 31.21, "y": 29.99 },
+  { "id": 9,  "name": "Mohandessin",               "population": 180000, "type": "Business",    "x": 31.20, "y": 30.05 },
+  { "id": 10, "name": "Dokki",                     "population": 220000, "type": "Mixed",       "x": 31.21, "y": 30.03 },
+  { "id": 11, "name": "Shubra",                    "population": 450000, "type": "Residential", "x": 31.24, "y": 30.11 },
+  { "id": 12, "name": "Helwan",                    "population": 350000, "type": "Industrial",  "x": 31.33, "y": 29.85 },
+  { "id": 13, "name": "New Administrative Capital","population":  50000, "type": "Government",  "x": 31.80, "y": 30.02 },
+  { "id": 14, "name": "Al Rehab",                  "population": 120000, "type": "Residential", "x": 31.49, "y": 30.06 },
+  { "id": 15, "name": "Sheikh Zayed",              "population": 150000, "type": "Residential", "x": 30.94, "y": 30.01 }
+]
