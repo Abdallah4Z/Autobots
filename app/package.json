@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node \"D:\\IMPORTANT DATA\\AIU Computer Engineering\\CE Year 3\\Semester 2\\CSE112 Design & Analysis of Algorithms\\Project\\app\\node_modules\\vite\\bin\\vite.js\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -13,9 +13,9 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.0.2",
-    "@mui/material": "^7.0.2",
+    "@mui/material": "^7.1.0",
     "@react-google-maps/api": "^2.20.6",
-    "@react-oauth/google": "^0.12.1",
+    "@react-oauth/google": "^0.12.2",
     "@reduxjs/toolkit": "^2.7.0",
     "@types/mapbox-gl": "^3.4.1",
     "@types/maplibre-gl": "^1.13.2",
@@ -48,6 +48,6 @@
     "globals": "^16.0.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
-    "vite": "^6.3.0"
+    "vite": "^6.3.5"
   }
 }
