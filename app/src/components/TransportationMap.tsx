@@ -4,6 +4,92 @@ import MapDrawer from './MapDrawer';
 import { Box, Typography } from '@mui/material';
 import { cityData } from '../pages/cityData';
 
+// Map styles for different times of day
+const mapStyles = {  morning: [
+    {
+      // Very subtle morning style - just a light overlay on the default map
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{ "saturation": 15 }, { "lightness": 5 }]  // Slightly more vibrant water
+    },
+    {
+      "featureType": "landscape.natural",
+      "elementType": "geometry", 
+      "stylers": [{ "saturation": 5 }, { "hue": "#8aff00" }, { "lightness": 5 }]  // Very subtle green tint
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry",
+      "stylers": [{ "hue": "#a3e36b" }, { "saturation": 10 }]  // Very subtle park highlight
+    }
+  ],
+  afternoon: [], // Empty array = default Google Maps style
+  evening: [
+    {
+      "elementType": "geometry",
+      "stylers": [{ "color": "#eeebe5" }]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [{ "color": "#4a4a4a" }]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{ "color": "#b0d4e8" }]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [{ "color": "#e4bc7b" }]
+    }
+  ],
+  night: [
+    {
+      "elementType": "geometry",
+      "stylers": [{ "color": "#242f3e" }]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [{ "color": "#242f3e" }]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [{ "color": "#746855" }]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [{ "color": "#38414e" }]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry.stroke",
+      "stylers": [{ "color": "#212a37" }]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.fill",
+      "stylers": [{ "color": "#9ca5b3" }]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{ "color": "#17263c" }]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [{ "color": "#515c6d" }]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.stroke",
+      "stylers": [{ "color": "#17263c" }]
+    }
+  ]
+};
+
 interface Waypoint {
   location: {
     lat: number;
@@ -25,8 +111,13 @@ interface RouteData {
   totalTime?: number;
   edges?: Array<{from: string, to: string, mode?: string, route?: string}>;
   lineStyle?: string;
+  timeOfDay?: string; // Added time of day for map styling
   isPublicTransport?: boolean;
+  isEmergencyRoute?: boolean;
+  emergencyType?: string;
+  isMST?: boolean; // Flag for MST vs. path
   steps?: any[]; // Public transport steps data
+  rawData?: any; // Raw data for MST
 }
 
 interface TransportationMapProps {
@@ -45,6 +136,8 @@ interface TransportationMapProps {
   onRouteToggle?: (showRoute: boolean) => void;
   // Add route data handler
   onFetchRoute?: (data: any) => void;
+  // Time of day for styling the map
+  timeOfDay?: string;
 }
 
 // Define map container style
@@ -133,7 +226,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   destination,
   defaultShowRoute = false,
   onRouteToggle,
-  onFetchRoute
+  onFetchRoute,
+  timeOfDay = 'morning' // Default to morning if not specified
 }) => {
   // State for directions response
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
@@ -145,6 +239,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   const [routeData, setRouteData] = useState<RouteData | null>(null);
   // Line style preference (straight line or roads)
   const [lineStyle, setLineStyle] = useState<string>("Roads");
+  // Current time of day for map styling
+  const [currentTimeOfDay, setCurrentTimeOfDay] = useState<string>(timeOfDay);
   // Route nodes converted to coordinates
   const [routeCoordinates, setRouteCoordinates] = useState<google.maps.LatLngLiteral[]>([]);
   
@@ -163,10 +259,16 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
     lat: initialViewState.latitude,
     lng: initialViewState.longitude
   };
-
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
+  
+  // Effect to update the map style when timeOfDay prop changes
+  useEffect(() => {
+    if (timeOfDay && timeOfDay !== currentTimeOfDay) {
+      setCurrentTimeOfDay(timeOfDay.toLowerCase());
+    }
+  }, [timeOfDay]);
 
   // Handle route toggle
   const handleToggleRoute = useCallback(() => {
@@ -185,6 +287,11 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
     // Update line style preference if provided
     if (data.lineStyle) {
       setLineStyle(data.lineStyle);
+    }
+    
+    // Update time of day if provided
+    if (data.timeOfDay) {
+      setCurrentTimeOfDay(data.timeOfDay.toLowerCase());
     }
     
     // Convert node IDs to coordinates for straight line rendering
@@ -284,16 +391,15 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   // Render the map
   return (
     <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>
-      {/* MapDrawer for controls */}
-      <MapDrawer 
+      {/* MapDrawer for controls */}      <MapDrawer 
         title="Transportation Controls" 
         showFilters={true}
         showRoute={showRoute}
         onToggleRoute={handleToggleRoute}
         onFetchRoute={handleRouteData}
+        timeOfDay={currentTimeOfDay}
       />
-      
-      <GoogleMap
+        <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
         zoom={initialViewState.zoom}
@@ -302,6 +408,7 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
+          styles: mapStyles[currentTimeOfDay as keyof typeof mapStyles] || []
         }}
       >
         {/* Request directions if we should show route with Roads style */}
@@ -551,12 +658,7 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
           >
             <div style={{ padding: '8px', maxWidth: '200px' }}>
               <Typography variant="subtitle1" fontWeight="bold">Route Information</Typography>
-              <Typography variant="body2">
-                Distance: {routeData.totalDistance?.toFixed(1)} km
-              </Typography>
-              <Typography variant="body2">
-                Est. Time: {routeData.totalTime?.toFixed(0)} min
-              </Typography>
+             
               {routeData.isPublicTransport && routeData.steps && (
                 <div>
                   <Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>
