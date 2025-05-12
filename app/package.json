@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node \"D:\\IMPORTANT DATA\\AIU Computer Engineering\\CE Year 3\\Semester 2\\CSE112 Design & Analysis of Algorithms\\Project\\app\\node_modules\\vite\\bin\\vite.js\"",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
