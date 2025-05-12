@@ -11,7 +11,7 @@ Before running the frontend, ensure you have the required dependencies installed
 
 ```bash
 cd app
-npm i react-router-dom
+npm install
 ```
 
 ### 🚀 Running the Frontend
@@ -30,8 +30,8 @@ npm run dev
 To run the backend Flask server, navigate to the `backend/src/app` directory and execute the following command:
 
 ```bash
-cd backend/src/app
-flask --app app run
+cd backend/src
+python app.py
 ```
 
 ---
