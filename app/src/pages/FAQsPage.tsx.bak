@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Layout from '../components/Layout';
+import '../style/faq_style.css';
 
 const FAQsPage: React.FC = () => {
   // FAQ data
@@ -39,36 +40,39 @@ const FAQsPage: React.FC = () => {
   // Set document title
   React.useEffect(() => {
     document.title = "FAQs - Transportation Network";
-  }, []);
-
-  return (
+  }, []);  return (
     <Layout>
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth="md" sx={{ py: 6 }} className="faq-container">
         <Typography variant="h3" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
           Frequently Asked Questions
         </Typography>
         
-        <Box sx={{ mb: 6 }}>
+        <Box sx={{ mb: 4 }}>
           <Typography variant="body1" paragraph>
             Find answers to common questions about our transportation network optimization system. 
             If you don't see your question here, feel free to reach out through our Contact page.
           </Typography>
         </Box>
 
-        {faqs.map((faq, index) => (
-          <Accordion key={index} sx={{ mb: 2 }}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              aria-controls={`panel${index}-content`}
-              id={`panel${index}-header`}
+        <Box sx={{ width: '100%' }}>{faqs.map((faq, index) => (            <Accordion 
+              key={index} 
+              className="faq-accordion"
+              sx={{ mb: 2 }}
             >
-              <Typography variant="h6">{faq.question}</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography>{faq.answer}</Typography>
-            </AccordionDetails>
-          </Accordion>
-        ))}
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls={`panel${index}-content`}
+                id={`panel${index}-header`}
+              >
+                <Typography variant="h6" className="faq-accordion-title">{faq.question}</Typography>
+              </AccordionSummary>              <AccordionDetails className="faq-accordion-details">
+                <Typography>{faq.answer}</Typography>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+          {/* Add extra space at the bottom for better scrolling */}
+          <div className="faq-page-bottom-spacing"></div>
+        </Box>
       </Container>
     </Layout>
   );

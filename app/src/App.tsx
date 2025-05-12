@@ -11,7 +11,8 @@ import Signup from './pages/Signup'
 import ContactPage from './pages/ContactPage'
 import FAQsPage from './pages/FAQsPage'
 import TransportationDashboard from './pages/TransportationDashboard'
-import FloatingHelpButton from './components/FloatingHelpButton'
+import ConditionalHelpButton from './components/ConditionalHelpButton'
+
 function App() {
   // Set a default document title for the application
   React.useEffect(() => {
@@ -21,8 +22,8 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <Router>
-        {/* Floating Help Button appears on all pages */}
-        <FloatingHelpButton />
+        {/* Conditional Help Button - only appears on specific pages */}
+        <ConditionalHelpButton />
         
         <Routes>
           <Route path="/login" element={<Login />} />
