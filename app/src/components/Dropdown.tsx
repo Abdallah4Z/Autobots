@@ -74,9 +74,20 @@ const Dropdown: React.FC<DropdownProps> = ({
   };
   const handleEmergencyChange = (event: SelectChangeEvent) => {
     setEm(event.target.value);
-  };
-  const handleTimeChange = (event: SelectChangeEvent) => {
-    setTime(event.target.value);
+  };  const handleTimeChange = (event: SelectChangeEvent) => {
+    const newTimeOfDay = event.target.value;
+    setTime(newTimeOfDay);
+    
+    // If we have cached route data, update the visualization immediately with the new time of day
+    if (cachedRouteData && onFetchRoute) {
+      const updatedRouteData = {
+        ...cachedRouteData,
+        timeOfDay: newTimeOfDay
+      };
+      
+      // Pass the updated route data to update the map theme
+      onFetchRoute(updatedRouteData);
+    }
   };
   
   const handleRouteChange = (event: SelectChangeEvent) => {
@@ -101,10 +112,32 @@ const Dropdown: React.FC<DropdownProps> = ({
       onFetchRoute(updatedRouteData);
     }
   };
-  
   const selectStyle = {
     fontSize: '1.2rem',
     height: '3.5rem',
+    width: '130px',        // Fixed width for all dropdowns
+    "& .MuiSelect-select": {
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    }
+  };
+    // Controls the dropdown menu size
+  const menuProps = {
+    PaperProps: {
+      style: {
+        maxHeight: 300,
+        overflow: 'auto',
+        width: '220px',  // Match the dropdown width
+      },
+    },
+    // Ensure proper text handling in the dropdown
+    SelectDisplayProps: {
+      style: {
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }
   };
   
   const fetchRouteData = async () => {
@@ -448,23 +481,22 @@ const Dropdown: React.FC<DropdownProps> = ({
     
     return orderedNodes;
   };
-  
-  return (
+    return (
     <Box className={className} sx={{ p: 1 }}>
       <Typography variant="h5" sx={{ mb: 1, ml: 1 }}>Map Filters</Typography>
 
-      <Grid container spacing={8}>
+      <Grid container spacing={2}>
         {/* Location */}
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="location-label" sx={{ fontSize: '1.2rem' }}>Origin</InputLabel>
-            <Select
+            <InputLabel id="location-label" sx={{ fontSize: '1.2rem' }}>Origin</InputLabel>            <Select
               labelId="location-label"
               id="location-select"
               value={Origin}
               label="Location"
               onChange={handleOriginChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
                 <MenuItem value="1">Maadi</MenuItem>
                 <MenuItem value="2">Nasr City</MenuItem>
@@ -498,14 +530,14 @@ const Dropdown: React.FC<DropdownProps> = ({
         {/* Category */}
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="category-label" sx={{ fontSize: '1.2rem' }}>Destination</InputLabel>
-            <Select
+            <InputLabel id="category-label" sx={{ fontSize: '1.2rem' }}>Destination</InputLabel>            <Select
               labelId="category-label"
               id="category-select"
               value={Destination}
               label="Category"
               onChange={handleDestinationChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
                 <MenuItem value="1">Maadi</MenuItem>
                 <MenuItem value="2">Nasr City</MenuItem>
@@ -539,14 +571,14 @@ const Dropdown: React.FC<DropdownProps> = ({
         {/* Time Range */}
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="time-range-label" sx={{ fontSize: '1.2rem' }}>TimeOFday</InputLabel>
-            <Select
+            <InputLabel id="time-range-label" sx={{ fontSize: '1.2rem' }}>TimeOFday</InputLabel>            <Select
               labelId="time-range-label"
               id="time-range-select"
               value={Time}
               label="Time Range"
               onChange={handleTimeChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
               <MenuItem value="morning">morning</MenuItem>
               <MenuItem value="afternoon">afternoon</MenuItem>
@@ -557,14 +589,14 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Route-label" sx={{ fontSize: '1.2rem' }}>Route</InputLabel>
-            <Select
+            <InputLabel id="Route-label" sx={{ fontSize: '1.2rem' }}>Route</InputLabel>            <Select
               labelId="Route-label"
               id="Route-select"
               value={Routes}
               label="Route"
               onChange={handleRouteChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
               <MenuItem value="MST">MST</MenuItem>
               <MenuItem value="Private">Private</MenuItem>
@@ -575,25 +607,25 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Line-label" sx={{ fontSize: '1.2rem' }}>Line</InputLabel>
-            <Select
+            <InputLabel id="Line-label" sx={{ fontSize: '1.2rem' }}>Line</InputLabel>            <Select
               labelId="Line-label"
               id="Line-select"
               value={Lines}
               label="Line"
               onChange={handleLineChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
               <MenuItem value="StraightLine">
                 Straight Line 
                 <Typography variant="caption" display="block" color="text.secondary">
-                  Draw direct lines between nodes
+                  Draw direct lines
                 </Typography>
               </MenuItem>
               <MenuItem value="Roads">
                 Roads 
                 <Typography variant="caption" display="block" color="text.secondary">
-                  Follow actual road paths
+                  Follow actual road
                 </Typography>
               </MenuItem>
             </Select>
@@ -601,14 +633,14 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Algo-label" sx={{ fontSize: '1.2rem' }}>Algorithm</InputLabel>
-            <Select
+            <InputLabel id="Algo-label" sx={{ fontSize: '1.2rem' }}>Algorithm</InputLabel>            <Select
               labelId="Algo-label"
               id="Algo-select"
               value={Algo}
               label="Algo"
               onChange={handleAlgoChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
               <MenuItem value="ASTAR">ASTAR</MenuItem>
               <MenuItem value="dijkstra">dijkstra</MenuItem>
@@ -618,14 +650,14 @@ const Dropdown: React.FC<DropdownProps> = ({
                </Grid>
                <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="EM-label" sx={{ fontSize: '1.2rem' }}>Emergency</InputLabel>
-            <Select
+            <InputLabel id="EM-label" sx={{ fontSize: '1.2rem' }}>Emergency</InputLabel>            <Select
               labelId="EM-label"
               id="EM-select"
               value={Em}
               label="EM"
               onChange={handleEmergencyChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
               <MenuItem value="None">None</MenuItem>
               <MenuItem value="Ambulance">Ambulance</MenuItem>
