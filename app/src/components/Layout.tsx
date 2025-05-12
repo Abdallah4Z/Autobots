@@ -10,12 +10,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const toggleDrawer = () => {
     setOpen(!open);
   };
-
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', overflow: 'auto' }}>
       <Appbar onToggle={toggleDrawer} isOpen={open} />
       <Navigation open={open} />
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, width: '100%', overflowY: 'auto' }}>
         <Box sx={{ height: '64px' }} /> {/* Toolbar spacer */}
         {children}
       </Box>

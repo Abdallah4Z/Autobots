@@ -18,6 +18,8 @@ interface MapDrawerProps {
   onToggleRoute?: () => void;
   // Add route data handler
   onFetchRoute?: (data: any) => void;
+  // Time of day for theming
+  timeOfDay?: string;
 }
 
 const MapDrawer: React.FC<MapDrawerProps> = ({
@@ -26,26 +28,51 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
   showFilters = true,
   showRoute = true,
   onToggleRoute,
-  onFetchRoute
+  onFetchRoute,
+  timeOfDay = 'morning'
 }) => {
   // State to control drawer open/close with hover
   const [isOpen, setIsOpen] = useState(false);
   // State to track if user is hovering near the top
-  const [isHovering, setIsHovering] = useState(false);
-  // Reference to the drawer contents
+  const [isHovering, setIsHovering] = useState(false);  // Reference to the drawer contents
   const hoverAreaRef = useRef<HTMLDivElement>(null);
   const drawerContentRef = useRef<HTMLDivElement>(null);
   // Track if drawer is currently in transition
   const isTransitioning = useRef(false);
+  // Store the close timeout ID
+  const closeTimeoutRef = useRef<number | null>(null);
+
+  // Determine if we're in dark mode based on timeOfDay
+  const isDarkMode = timeOfDay === 'night';
+  
+  // Theme styles based on dark/light mode
+  const themeStyles = {
+    drawerPaper: {
+      backgroundColor: isDarkMode ? '#242f3e' : '#ffffff',
+      color: isDarkMode ? '#9ca5b3' : 'inherit',
+    },
+    formControl: {
+      color: isDarkMode ? '#9ca5b3' : 'inherit',
+    },
+    indicator: {
+      backgroundColor: isDarkMode ? '#38414e' : 'primary.main',
+      opacity: isOpen ? 0.8 : isHovering ? 0.2 : 0,
+    },
+  };
 
   // Clear all timeouts to prevent conflicting state updates
   const clearAllTimeouts = () => {
-    // Removed timeout clearing as we're no longer using timeouts
+    if (closeTimeoutRef.current !== null) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
   };
-
   // Hover enter handler - simplified to open immediately
   const handleMouseEnter = () => {
     if (isTransitioning.current) return;
+    
+    // Clear any pending close timeout
+    clearAllTimeouts();
     
     setIsHovering(true);
     // Open drawer immediately on hover
@@ -56,21 +83,24 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
     }, 300);
   };
 
-  // Hover leave handler - simplified
-  const handleMouseLeave = (delay=1300) => {
+  // Hover leave handler - with 3-second delay
+  const handleMouseLeave = () => {
     // Don't trigger leave during transitions
     if (isTransitioning.current) return;
     
     setIsHovering(false);
-    // Close immediately when mouse leaves
-    isTransitioning.current = true;
-    setIsOpen(false);
-    setTimeout(() => {
-      isTransitioning.current = false;
-    }, delay);
+    
+    // Set a 3-second delay before closing
+    clearAllTimeouts(); // Clear any existing timeout
+    closeTimeoutRef.current = window.setTimeout(() => {
+      isTransitioning.current = true;
+      setIsOpen(false);
+      setTimeout(() => {
+        isTransitioning.current = false;
+      }, 250);
+    }, 1000); // 1.5-second delay
   };
-  
-  // Check if mouse is inside either hover area or drawer content
+    // Check if mouse is inside either hover area or drawer content
   const handleMouseMoveOutside = (e: MouseEvent) => {
     if (!isOpen) return;
     
@@ -87,6 +117,7 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
     const isInOpenDropdownMenu = targetElement.closest('.MuiPopover-paper, .MuiMenu-list, [role="listbox"]');
     if (isInOpenDropdownMenu) {
       // If over a dropdown, do not close the drawer
+      clearAllTimeouts(); // Clear any close timeout
       return;
     }
     
@@ -105,17 +136,22 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
                               e.clientY >= drawerRect.top - 5 &&
                               e.clientY <= drawerRect.bottom + 5;
     
-    if (!isInHoverArea && !isInDrawerContent) {
+    if (isInHoverArea || isInDrawerContent) {
+      // If mouse re-enters the area, cancel any pending close
+      clearAllTimeouts();
+    } else if (!isInHoverArea && !isInDrawerContent) {
       // Only call handleMouseLeave if not in hover area, not in drawer content,
       // AND (implicitly from the check above) not in an open dropdown menu.
       handleMouseLeave();
     }
   };
+  
   // Set up global mouse move listener to detect when mouse leaves both areas
   useEffect(() => {
     document.addEventListener('mousemove', handleMouseMoveOutside);
     return () => {
       document.removeEventListener('mousemove', handleMouseMoveOutside);
+      clearAllTimeouts(); // Clean up timeouts when component unmounts
     };
   }, [isOpen]);
 
@@ -144,8 +180,8 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
           left: 0,
           width: '100%',
           height: '4px', // Very thin line
-          backgroundColor: 'primary.main',
-          opacity: isOpen ? 0.8 : isHovering ? 0.2 : 0, // Simplified - shows on any hover
+          backgroundColor: themeStyles.indicator.backgroundColor,
+          opacity: themeStyles.indicator.opacity, // Simplified - shows on any hover
           transition: 'opacity 0.2s ease-in-out', // Faster transition
           zIndex: 1201,
           borderRadius: '0 0 4px 4px',
@@ -168,12 +204,39 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
             borderRadius: '0 0 12px 12px',
             boxShadow: 3,
             transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)', // Faster transition
-            ...drawerSx
-          },
-          // Add custom backdrop styling
+            ...drawerSx,
+            ...themeStyles.drawerPaper
+          },          // Add custom backdrop styling
           '& .MuiBackdrop-root': {
             backgroundColor: 'transparent',
-          }
+          },
+          // Apply dark mode styles to form controls when in night mode
+          ...(isDarkMode && {
+            '& .MuiInputLabel-root': {
+              color: '#9ca5b3',
+            },
+            '& .MuiOutlinedInput-root': {
+              color: '#9ca5b3',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#38414e',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#515c6d',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#6b7a8f',
+              }
+            },
+            '& .MuiSelect-icon': {
+              color: '#9ca5b3',
+            },
+            '& .MuiMenuItem-root': {
+              color: '#9ca5b3',
+            },
+            '& .MuiSelect-select': {
+              color: '#9ca5b3',
+            }
+          })
         }}
         BackdropProps={{
           invisible: true, // Hide the backdrop
@@ -183,12 +246,17 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
         }}
       >
         <Box
-          ref={drawerContentRef}
-          sx={{ 
+          ref={drawerContentRef}          sx={{ 
             width: '100%', 
             height: '100%',
             display: 'flex',
             flexDirection: showFilters ? 'row' : 'column',
+            // Add dark mode theming to container elements
+            ...(isDarkMode && {
+              '& .MuiTypography-root': {
+                color: '#9ca5b3',
+              }
+            })
           }}
           // onMouseLeave={handleMouseLeave} // Added to detect when mouse leaves drawer
         >
@@ -210,9 +278,11 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
                     transform: 'translateY(0)'
                   }
                 }
-              }}>
-                {/* Pass the route data handler to Dropdown */}
-                <Dropdown onFetchRoute={onFetchRoute} />
+              }}>                {/* Pass the route data handler and timeOfDay to Dropdown */}
+                <Dropdown 
+                  onFetchRoute={onFetchRoute} 
+                  currentRouteData={{ timeOfDay }}
+                />
                 
                 {/* Route toggle button next to dropdown */}
                 {onToggleRoute && (
@@ -220,14 +290,21 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
                     variant="contained"
                     color="primary"
                     onClick={onToggleRoute}
-                    className="route-toggle-btn"
-                    sx={{ 
+                    className="route-toggle-btn"                    sx={{ 
                       ml: 2,
                       marginTop: 5,
                       transition: 'all 0.2s ease',
                       '&:hover': {
                         transform: 'scale(1.05)'
-                      }
+                      },
+                      ...(isDarkMode && {
+                        backgroundColor: '#38414e',
+                        color: '#9ca5b3',
+                        '&:hover': {
+                          backgroundColor: '#515c6d',
+                          transform: 'scale(1.05)'
+                        }
+                      })
                     }}
                   >
                     {showRoute ? 'Hide Route' : 'Show Route'}

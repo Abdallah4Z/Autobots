@@ -1,8 +1,7 @@
 maplibre-gl @https://types/maplibre-gl
 flask
-networkx
-pandas
-matplotlib
+maplibre-gl==0.1.0
+
 json
 base64
 io

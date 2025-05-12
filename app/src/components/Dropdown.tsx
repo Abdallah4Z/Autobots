@@ -18,22 +18,30 @@ interface DropdownProps {
     destination: string;
     timeOfDay: string;
     route: string;
-    lines:string;
+    lines: string;
+    algo: string;
+    Emergency: string;
   }) => void;
   onFetchRoute?: (data?: any) => void;
+  currentRouteData?: any;  // To store current route data if available
 }
 
 const Dropdown: React.FC<DropdownProps> = ({ 
   className,
   onValuesChange,
-  onFetchRoute 
+  onFetchRoute,
+  currentRouteData
 }) => {
   // Set default values
   const [Origin, setOrigin] = useState('1');
   const [Destination, setDestination] = useState('2');
-  const [Time, setTime] = useState('Morning');
+  const [Time, setTime] = useState('morning');
   const [Routes, setRoute] = useState('MST');
   const [Lines, setLine] = useState('Roads');
+  const [Em, setEm] = useState('None');
+  // Cached route data for redrawing with different styles
+  const [cachedRouteData, setCachedRouteData] = useState<any>(null);
+  const [Algo, setAlgo] = useState('ASTAR');
   // Notify parent component when values change
   useEffect(() => {
     if (onValuesChange) {
@@ -42,11 +50,19 @@ const Dropdown: React.FC<DropdownProps> = ({
         destination: Destination,
         timeOfDay: Time,
         route: Routes,
-        lines:Lines
-        
+        lines: Lines,
+        algo: Algo,
+        Emergency:Em
       });
     }
-  }, [Origin, Destination, Time,Routes,Lines, onValuesChange]);
+  }, [Origin, Destination, Time, Routes, Lines, Algo,Em,onValuesChange]);
+
+  // Update cached route data when received from parent
+  useEffect(() => {
+    if (currentRouteData) {
+      setCachedRouteData(currentRouteData);
+    }
+  }, [currentRouteData]);
 
   // Handlers
   const handleOriginChange = (event: SelectChangeEvent) => {
@@ -56,19 +72,72 @@ const Dropdown: React.FC<DropdownProps> = ({
   const handleDestinationChange = (event: SelectChangeEvent) => {
     setDestination(event.target.value);
   };
-
-  const handleTimeChange = (event: SelectChangeEvent) => {
-    setTime(event.target.value);
+  const handleEmergencyChange = (event: SelectChangeEvent) => {
+    setEm(event.target.value);
+  };  const handleTimeChange = (event: SelectChangeEvent) => {
+    const newTimeOfDay = event.target.value;
+    setTime(newTimeOfDay);
+    
+    // If we have cached route data, update the visualization immediately with the new time of day
+    if (cachedRouteData && onFetchRoute) {
+      const updatedRouteData = {
+        ...cachedRouteData,
+        timeOfDay: newTimeOfDay
+      };
+      
+      // Pass the updated route data to update the map theme
+      onFetchRoute(updatedRouteData);
+    }
   };
+  
   const handleRouteChange = (event: SelectChangeEvent) => {
     setRoute(event.target.value);
   };
+  const handleAlgoChange = (event: SelectChangeEvent) => {
+    setAlgo(event.target.value);
+  }
   const handleLineChange = (event: SelectChangeEvent) => {
-    setLine(event.target.value);
+    const newLineStyle = event.target.value;
+    setLine(newLineStyle);
+    
+    // If we have cached route data, update the visualization immediately
+    if (cachedRouteData && onFetchRoute) {
+      // Add the line style to the route data
+      const updatedRouteData = {
+        ...cachedRouteData,
+        lineStyle: newLineStyle
+      };
+      
+      // Pass the updated route data back to parent component to redraw
+      onFetchRoute(updatedRouteData);
+    }
   };
   const selectStyle = {
     fontSize: '1.2rem',
     height: '3.5rem',
+    width: '130px',        // Fixed width for all dropdowns
+    "& .MuiSelect-select": {
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    }
+  };
+    // Controls the dropdown menu size
+  const menuProps = {
+    PaperProps: {
+      style: {
+        maxHeight: 300,
+        overflow: 'auto',
+        width: '220px',  // Match the dropdown width
+      },
+    },
+    // Ensure proper text handling in the dropdown
+    SelectDisplayProps: {
+      style: {
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }
   };
   
   const fetchRouteData = async () => {
@@ -76,63 +145,318 @@ const Dropdown: React.FC<DropdownProps> = ({
       console.log('Fetching route data with parameters:', {
         origin: Origin,
         destination: Destination,
-        timeOfDay: Time
+        timeOfDay: Time,
+        routeType: Routes,
+        lineStyle: Lines,
+        algorithm: Algo,
+        emergency: Em
       });
       
-      const url = `/api/flow/route/astar?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}`;
-      console.log('Request URL:', url);
-  
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
+      // Convert time period to lowercase to match backend expectations
+      const lowerCasePeriod = Time.toLowerCase();
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries([...response.headers]));
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch route: ${response.status} ${response.statusText}`);
-      }
-      
-      // Get the response text and parse it
-      const responseText = await response.text();
-      console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
-      
-      // Parse the JSON response
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('Successfully parsed route data:', data);
-      } catch (jsonError) {
-        console.error('Failed to parse JSON:', jsonError);
-        throw new Error('Response is not valid JSON');
-      }
+      let url, response;
 
-      // Extract route nodes in order
-      if (data && data.edges && Array.isArray(data.edges)) {
-        // Create ordered list of nodes (from origin to destination)
-        const orderedNodes = extractOrderedNodes(data.edges);
-        console.log('Ordered route nodes:', orderedNodes);
+      // Use different API endpoints based on the route type and emergency status
+      
+      if (Em !== 'None') {
+        // For emergency routes, use the emergency API
+        const emType = Em.toLowerCase(); // Convert to lowercase for the API
+        url = `http://localhost:5000/emergency/route?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}&type=${emType}`;
+        console.log('Emergency route request URL:', url);
         
-        // Additional route information
-        const routeInfo = {
-          nodes: orderedNodes,
-          totalDistance: data.total_distance,
-          totalTime: data.total_time
-        };
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
         
-        console.log('Processed route information:', routeInfo);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
         
-        // Pass the processed route data to parent component
-        if (onFetchRoute) {
-          onFetchRoute(routeInfo);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch emergency route: ${response.status} ${response.statusText}`);
         }
         
-        return routeInfo;
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw emergency response (first 500 chars):', responseText.substring(0, 500));
+        
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed emergency route data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+        
+        // Process the emergency route data
+        if (data && data.edges && Array.isArray(data.edges)) {
+          const orderedNodes = extractOrderedNodes(data.edges);
+          console.log('Ordered emergency route nodes:', orderedNodes);
+          
+          const routeInfo = {
+            nodes: orderedNodes,
+            totalDistance: data.total_distance,
+            totalTime: data.total_time,
+            edges: data.edges,
+            lineStyle: Lines,
+            isEmergencyRoute: true,
+            emergencyType: Em
+          };
+          
+          console.log('Processed emergency route information:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid emergency route data format');
+        }
+      } else if (Routes === 'Public') {
+        // For public transportation, use the transportation API
+        url = `/api/transportation/itinerary?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}`;
+        console.log('Public transportation request URL:', url);
+        
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch public transportation route: ${response.status} ${response.statusText}`);
+        }
+
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed public transportation data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+
+        // Public transportation API returns a different format, so we need to convert it
+        if (data && data.steps && Array.isArray(data.steps)) {
+          // Extract route information from the steps
+          const edges = [];
+          const orderedNodes = [];
+          let totalDistance = 0;
+          let totalTime = 0; // Estimate based on stops
+          
+          // Process each leg of the journey
+          data.steps.forEach((step, index) => {
+            // Add the path nodes from each step
+            if (step.path && Array.isArray(step.path)) {
+              // First node of first step is already the origin
+              if (index === 0) {
+                orderedNodes.push(step.path[0]);
+              }
+              
+              // Add the remaining nodes and create edges
+              for (let i = (index === 0 ? 1 : 0); i < step.path.length; i++) {
+                const from = step.path[i - 1];
+                const to = step.path[i];
+                orderedNodes.push(to);
+                edges.push({ from, to, mode: step.mode, route: step.route });
+              }
+              
+              // Estimate distance and time based on number of stops
+              // (This is a simplification; real data would be better)
+              totalDistance += step.stops * 2; // Rough estimate: 2km per stop
+              totalTime += step.stops * 5;     // Rough estimate: 5 minutes per stop
+            }
+          });
+          
+          // Create route information object
+          const routeInfo = {
+            nodes: orderedNodes,
+            totalDistance: totalDistance,
+            totalTime: totalTime,
+            edges: edges,
+            lineStyle: Lines,
+            isPublicTransport: true,
+            steps: data.steps // Keep original steps for detailed display
+          };
+          
+          console.log('Processed public transport information:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid public transport data format');
+        }
+      } else if (Routes === 'MST') {
+        // For MST routes, use the infrastructure API
+        url = `/api/planner/period/${encodeURIComponent(lowerCasePeriod)}`;
+        console.log('MST infrastructure request URL:', url);
+        
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch MST route: ${response.status} ${response.statusText}`);
+        }
+        
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+        
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed MST data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+
+        // For MST, we just directly use the edges from the JSON response
+        if (data && data.edges && Array.isArray(data.edges)) {
+          // Extract all unique nodes from the edges
+          const uniqueNodes = new Set<string>();
+          data.edges.forEach(edge => {
+            uniqueNodes.add(edge.from);
+            uniqueNodes.add(edge.to);
+          });
+          
+          // Additional route information with line style preference
+          const routeInfo = {
+            // All unique nodes in the MST
+            nodes: Array.from(uniqueNodes),
+            totalDistance: data.total_distance || 0,
+            totalTime: data.total_time || 0,
+            // Pass the raw edges directly without modification
+            edges: data.edges,
+            lineStyle: Lines,
+            // Special flag to indicate this is an MST, not a path
+            isMST: true,
+            // Include raw data to ensure we're using exactly what came from the API
+            rawData: data
+          };
+          
+          console.log('Processed MST information:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid MST data format: missing edges array');
+        }
       } else {
-        throw new Error('Invalid route data format: missing edges array');
+        // For road-based routes (Private, Emergency), use the flow API with the selected algorithm
+        // Map the dropdown value to the correct backend API endpoint
+        let algorithmEndpoint;
+        if (Algo === 'dijkstra') {
+          algorithmEndpoint = 'dijkstra';  // Map "DJ" to "dijkstra" for backend API
+        } else {
+          algorithmEndpoint = Algo.toLowerCase();  // For other algorithms like "ASTAR"
+        }
+        
+        console.log(`Using algorithm: ${Algo} (endpoint: ${algorithmEndpoint})`);
+        
+        // Use the full backend URL instead of relative URL
+        url = `http://127.0.0.1:5000/flow/route/${algorithmEndpoint}?origin=${encodeURIComponent(Origin)}&dest=${encodeURIComponent(Destination)}&period=${encodeURIComponent(lowerCasePeriod)}`;
+        console.log('Road route request URL:', url);
+      
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries([...response.headers]));
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch route: ${response.status} ${response.statusText}`);
+        }
+        
+        // Get the response text and parse it
+        const responseText = await response.text();
+        console.log('Raw response (first 500 chars):', responseText.substring(0, 500));
+        
+        // Parse the JSON response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Successfully parsed route data:', data);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON:', jsonError);
+          throw new Error('Response is not valid JSON');
+        }
+
+        // Extract route nodes in order
+        if (data && data.edges && Array.isArray(data.edges)) {
+          // Create ordered list of nodes (from origin to destination)
+          const orderedNodes = extractOrderedNodes(data.edges);
+          console.log('Ordered route nodes:', orderedNodes);
+          
+          // Additional route information with line style preference
+          const routeInfo = {
+            nodes: orderedNodes,
+            totalDistance: data.total_distance,
+            totalTime: data.total_time,
+            edges: data.edges,
+            lineStyle: Lines,
+            isPublicTransport: false
+          };
+          
+          console.log('Processed route information with line style:', routeInfo);
+          
+          // Cache the route data for future style changes
+          setCachedRouteData(routeInfo);
+          
+          // Pass the processed route data to parent component
+          if (onFetchRoute) {
+            onFetchRoute(routeInfo);
+          }
+          
+          return routeInfo;
+        } else {
+          throw new Error('Invalid route data format: missing edges array');
+        }
       }
     } catch (error) {
       console.error('Error fetching route:', error);
@@ -157,23 +481,22 @@ const Dropdown: React.FC<DropdownProps> = ({
     
     return orderedNodes;
   };
-  
-  return (
+    return (
     <Box className={className} sx={{ p: 1 }}>
       <Typography variant="h5" sx={{ mb: 1, ml: 1 }}>Map Filters</Typography>
 
-      <Grid container spacing={8}>
+      <Grid container spacing={2}>
         {/* Location */}
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="location-label" sx={{ fontSize: '1.2rem' }}>Origin</InputLabel>
-            <Select
+            <InputLabel id="location-label" sx={{ fontSize: '1.2rem' }}>Origin</InputLabel>            <Select
               labelId="location-label"
               id="location-select"
               value={Origin}
               label="Location"
               onChange={handleOriginChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
                 <MenuItem value="1">Maadi</MenuItem>
                 <MenuItem value="2">Nasr City</MenuItem>
@@ -205,16 +528,16 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
 
         {/* Category */}
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="category-label" sx={{ fontSize: '1.2rem' }}>Destination</InputLabel>
-            <Select
+            <InputLabel id="category-label" sx={{ fontSize: '1.2rem' }}>Destination</InputLabel>            <Select
               labelId="category-label"
               id="category-select"
               value={Destination}
               label="Category"
               onChange={handleDestinationChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
                 <MenuItem value="1">Maadi</MenuItem>
                 <MenuItem value="2">Nasr City</MenuItem>
@@ -246,65 +569,105 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
 
         {/* Time Range */}
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="time-range-label" sx={{ fontSize: '1.2rem' }}>TimeOFday</InputLabel>
-            <Select
+            <InputLabel id="time-range-label" sx={{ fontSize: '1.2rem' }}>TimeOFday</InputLabel>            <Select
               labelId="time-range-label"
               id="time-range-select"
               value={Time}
               label="Time Range"
               onChange={handleTimeChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
-              <MenuItem value="Morning">Morning</MenuItem>
-              <MenuItem value="Afternoon">Afternoon</MenuItem>
-              <MenuItem value="Evening">Evening</MenuItem>
-              <MenuItem value="Night">Night</MenuItem>
+              <MenuItem value="morning">morning</MenuItem>
+              <MenuItem value="afternoon">afternoon</MenuItem>
+              <MenuItem value="evening">evening</MenuItem>
+              <MenuItem value="night">night</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Route-label" sx={{ fontSize: '1.2rem' }}>Route</InputLabel>
-            <Select
+            <InputLabel id="Route-label" sx={{ fontSize: '1.2rem' }}>Route</InputLabel>            <Select
               labelId="Route-label"
               id="Route-select"
               value={Routes}
               label="Route"
               onChange={handleRouteChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
               <MenuItem value="MST">MST</MenuItem>
               <MenuItem value="Private">Private</MenuItem>
               <MenuItem value="Public">Public</MenuItem>
               <MenuItem value="Emergency">Emergency</MenuItem>
-
-              
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={24} sm={12} md={6}>
+        <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Line-label" sx={{ fontSize: '1.2rem' }}>Line</InputLabel>
-            <Select
+            <InputLabel id="Line-label" sx={{ fontSize: '1.2rem' }}>Line</InputLabel>            <Select
               labelId="Line-label"
               id="Line-select"
               value={Lines}
               label="Line"
               onChange={handleLineChange}
               sx={selectStyle}
+              MenuProps={menuProps}
             >
-              <MenuItem value="StraightLine">StraightLine</MenuItem>
-              <MenuItem value="Roads">Roads</MenuItem>
-              
-
-              
+              <MenuItem value="StraightLine">
+                Straight Line 
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Draw direct lines
+                </Typography>
+              </MenuItem>
+              <MenuItem value="Roads">
+                Roads 
+                <Typography variant="caption" display="block" color="text.secondary">
+                  Follow actual road
+                </Typography>
+              </MenuItem>
             </Select>
           </FormControl>
         </Grid>
+        <Grid item xs={18} sm={8} md={4}>
+          <FormControl fullWidth>
+            <InputLabel id="Algo-label" sx={{ fontSize: '1.2rem' }}>Algorithm</InputLabel>            <Select
+              labelId="Algo-label"
+              id="Algo-select"
+              value={Algo}
+              label="Algo"
+              onChange={handleAlgoChange}
+              sx={selectStyle}
+              MenuProps={menuProps}
+            >
+              <MenuItem value="ASTAR">ASTAR</MenuItem>
+              <MenuItem value="dijkstra">dijkstra</MenuItem>
+              
+            </Select>
+          </FormControl>
+               </Grid>
+               <Grid item xs={18} sm={8} md={4}>
+          <FormControl fullWidth>
+            <InputLabel id="EM-label" sx={{ fontSize: '1.2rem' }}>Emergency</InputLabel>            <Select
+              labelId="EM-label"
+              id="EM-select"
+              value={Em}
+              label="EM"
+              onChange={handleEmergencyChange}
+              sx={selectStyle}
+              MenuProps={menuProps}
+            >
+              <MenuItem value="None">None</MenuItem>
+              <MenuItem value="Ambulance">Ambulance</MenuItem>
+              <MenuItem value="police">police</MenuItem>
+              <MenuItem value="fire_truck">fire_truck</MenuItem>
+            </Select>
+          </FormControl>
+               </Grid>
         {/* Fetch Route Button */}
-        <Grid item xs={24} sm={12} md={6} sx={{ display: 'flex', alignItems: 'center' }}>
+        <Grid item xs={18} sm={8} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
           <Button 
             variant="contained" 
             color="primary" 

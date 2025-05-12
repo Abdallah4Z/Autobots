@@ -1,0 +1,30 @@
+/* FAQsPage specific styling */
+/* Just simple styling for the FAQ components - no forced scrolling behavior */
+
+.faq-accordion {
+  margin-bottom: 16px;
+  box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Add a hover effect for better user experience */
+.faq-accordion:hover {
+  box-shadow: 0px 5px 8px rgba(0, 0, 0, 0.1);
+}
+
+.faq-accordion-title {
+  font-weight: 600;
+}
+
+/* Just enough space at the bottom for aesthetic purposes */
+.faq-page-bottom-spacing {
+  padding-bottom: 40px;
+}
+
+/* Ensure accordion details expand properly */
+.faq-accordion-details {
+  padding: 16px;
+  word-break: break-word;
+}

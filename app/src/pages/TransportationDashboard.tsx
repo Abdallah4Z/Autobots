@@ -95,21 +95,8 @@ const TransportationDashboard: React.FC = () => {
       };
     });
   };
-  
-  return (
+    return (
     <div className="dashboard-container">
-      <Box sx={{ width: '100%', p: 2 }}>
-        {/* Remove the duplicate Dropdown component that's always visible */}
-        
-        {routeInfo && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-            <Typography variant="h6">Route Information</Typography>
-            <Typography>Distance: {routeInfo.totalDistance.toFixed(1)} km</Typography>
-            <Typography>Time: {routeInfo.totalTime.toFixed(1)} minutes</Typography>
-            <Typography>Nodes: {routeInfo.nodes.join(' → ')}</Typography>
-          </Box>
-        )}
-      </Box>
       
       <div className="map-container">
         <TransportationMap
@@ -123,6 +110,7 @@ const TransportationDashboard: React.FC = () => {
           destination={destination}
           defaultShowRoute={showRoute}
           onFetchRoute={handleRouteData} // Pass the route data handler
+          timeOfDay={routeInfo?.timeOfDay || 'morning'} // Pass time of day for map styling
         />
       </div>
     </div>
