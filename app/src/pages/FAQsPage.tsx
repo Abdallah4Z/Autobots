@@ -2,7 +2,17 @@ import React from 'react';
 import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Layout from '../components/Layout';
-import '../style/faq_style.css';
+
+// Simple styling for FAQ accordions
+const accordionStyle = {
+  marginBottom: '16px',
+  borderRadius: '8px',
+  boxShadow: '0px 3px 5px rgba(0, 0, 0, 0.05)',
+};
+
+const accordionHoverStyle = {
+  boxShadow: '0px 5px 8px rgba(0, 0, 0, 0.1)',
+};
 
 const FAQsPage: React.FC = () => {
   // FAQ data
@@ -40,9 +50,11 @@ const FAQsPage: React.FC = () => {
   // Set document title
   React.useEffect(() => {
     document.title = "FAQs - Transportation Network";
-  }, []);  return (
+  }, []);
+
+  return (
     <Layout>
-      <Container maxWidth="md" sx={{ py: 6 }} className="faq-container">
+      <Container maxWidth="md" sx={{ py: 6 }}>
         <Typography variant="h3" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
           Frequently Asked Questions
         </Typography>
@@ -54,25 +66,30 @@ const FAQsPage: React.FC = () => {
           </Typography>
         </Box>
 
-        <Box sx={{ width: '100%' }}>{faqs.map((faq, index) => (            <Accordion 
-              key={index} 
-              className="faq-accordion"
-              sx={{ mb: 2 }}
+        {/* Simple list of accordions without any custom scrolling containers */}
+        {faqs.map((faq, index) => (
+          <Accordion 
+            key={index}
+            sx={{
+              ...accordionStyle,
+              '&:hover': accordionHoverStyle
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls={`panel${index}-content`}
+              id={`panel${index}-header`}
             >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                aria-controls={`panel${index}-content`}
-                id={`panel${index}-header`}
-              >
-                <Typography variant="h6" className="faq-accordion-title">{faq.question}</Typography>
-              </AccordionSummary>              <AccordionDetails className="faq-accordion-details">
-                <Typography>{faq.answer}</Typography>
-              </AccordionDetails>
-            </Accordion>
-          ))}
-          {/* Add extra space at the bottom for better scrolling */}
-          <div className="faq-page-bottom-spacing"></div>
-        </Box>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>{faq.question}</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography>{faq.answer}</Typography>
+            </AccordionDetails>
+          </Accordion>
+        ))}
+        
+        {/* Simple bottom spacing */}
+        <Box sx={{ height: '40px' }} />
       </Container>
     </Layout>
   );
