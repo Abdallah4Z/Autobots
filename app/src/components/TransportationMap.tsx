@@ -352,11 +352,7 @@ const RouteInfoPanel: React.FC<RouteInfoPanelProps> = ({ routeData, showPanel, o
               <Typography variant="body2">
                 Optimal infrastructure network connecting all points.
               </Typography>
-              {routeData.totalTime !== undefined && (
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  <strong>Estimated Time:</strong> {routeData.totalTime.toFixed(1)} min
-                </Typography>
-              )}
+
               {routeData.edges && (
                 <Typography variant="body2">
                   <strong>Connections:</strong> {routeData.edges.length}
