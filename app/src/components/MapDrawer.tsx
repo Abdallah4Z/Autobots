@@ -20,6 +20,9 @@ interface MapDrawerProps {
   onFetchRoute?: (data: any) => void;
   // Time of day for theming
   timeOfDay?: string;
+  // Traffic layer toggle
+  showTraffic?: boolean;
+  onToggleTraffic?: () => void;
 }
 
 const MapDrawer: React.FC<MapDrawerProps> = ({
@@ -29,7 +32,9 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
   showRoute = true,
   onToggleRoute,
   onFetchRoute,
-  timeOfDay = 'morning'
+  timeOfDay = 'morning',
+  showTraffic = false,
+  onToggleTraffic
 }) => {
   // State to control drawer open/close with hover
   const [isOpen, setIsOpen] = useState(false);
@@ -283,8 +288,7 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
                   onFetchRoute={onFetchRoute} 
                   currentRouteData={{ timeOfDay }}
                 />
-                
-                {/* Route toggle button next to dropdown */}
+                  {/* Route toggle button next to dropdown */}
                 {onToggleRoute && (
                   <Button 
                     variant="contained"
@@ -303,11 +307,33 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
                         '&:hover': {
                           backgroundColor: '#515c6d',
                           transform: 'scale(1.05)'
-                        }
-                      })
+                        }                      })
                     }}
                   >
                     {showRoute ? 'Hide Route' : 'Show Route'}
+                  </Button>
+                )}
+
+                {/* Traffic toggle button */}
+                {onToggleTraffic && (
+                  <Button 
+                    variant="contained"
+                    color={showTraffic ? "secondary" : "primary"}
+                    onClick={onToggleTraffic}
+                    className="traffic-toggle-btn"
+                    sx={{ 
+                      ml: 2,
+                      marginTop: 5,
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        transform: 'scale(1.05)'
+                      },
+                      ...(isDarkMode && {
+                        backgroundColor: showTraffic ? '#ac4646' : '#38414e',
+                      })
+                    }}
+                  >
+                    {showTraffic ? 'Hide Traffic' : 'Show Traffic'}
                   </Button>
                 )}
               </Box>

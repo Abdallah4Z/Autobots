@@ -27,12 +27,11 @@ const DEFAULT_ORIGIN = { lat: 30.05, lng: 31.23 }; // Cairo center
 const DEFAULT_DESTINATION = { lat: 30.06, lng: 31.25 }; // Nearby location
 
 const TransportationDashboard: React.FC = () => {
-  const [showDebugger, setShowDebugger] = useState(false);
   const [waypoints, setWaypoints] = useState<Waypoint[]>(DEFAULT_WAYPOINTS);
   const [origin, setOrigin] = useState<{ lat: number; lng: number }>(DEFAULT_ORIGIN);
   const [destination, setDestination] = useState<{ lat: number; lng: number }>(DEFAULT_DESTINATION);
   const [showRoute, setShowRoute] = useState(false);
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [showTraffic, setShowTraffic] = useState(false);  const [routeData, setRouteData] = useState<RouteInfo | null>(null);
   
   // Handler for route data from Dropdown component
   const handleRouteData = (data: RouteInfo | undefined) => {
@@ -41,7 +40,7 @@ const TransportationDashboard: React.FC = () => {
       return;
     }
     
-    setRouteInfo(data);
+    setRouteData(data);
     console.log("Route data received:", data);
     
     // Convert node IDs to coordinates
@@ -95,11 +94,21 @@ const TransportationDashboard: React.FC = () => {
       };
     });
   };
-    return (
+
+  // Handler for route toggle
+  const handleRouteToggle = (value: boolean) => {
+    setShowRoute(value);
+  };
+  
+  // Handler for traffic toggle
+  const handleTrafficToggle = (value: boolean) => {
+    setShowTraffic(value);
+  };
+
+  return (
     <div className="dashboard-container">
       
-      <div className="map-container">
-        <TransportationMap
+      <div className="map-container">        <TransportationMap
           initialViewState={{
             longitude: 31.23, // Centered on Cairo
             latitude: 30.05,
@@ -109,8 +118,11 @@ const TransportationDashboard: React.FC = () => {
           origin={origin}
           destination={destination}
           defaultShowRoute={showRoute}
+          onRouteToggle={handleRouteToggle}
           onFetchRoute={handleRouteData} // Pass the route data handler
-          timeOfDay={routeInfo?.timeOfDay || 'morning'} // Pass time of day for map styling
+          timeOfDay={'morning'} // Default time of day for map styling
+          defaultShowTraffic={showTraffic}
+          onTrafficToggle={handleTrafficToggle}
         />
       </div>
     </div>

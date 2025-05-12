@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, DirectionsService, DirectionsRenderer, Polyline } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, DirectionsService, DirectionsRenderer, Polyline, TrafficLayer } from '@react-google-maps/api';
 import MapDrawer from './MapDrawer';
 import { Box, Typography } from '@mui/material';
 import { cityData } from '../pages/cityData';
@@ -138,6 +138,9 @@ interface TransportationMapProps {
   onFetchRoute?: (data: any) => void;
   // Time of day for styling the map
   timeOfDay?: string;
+  // Traffic display toggle
+  defaultShowTraffic?: boolean;
+  onTrafficToggle?: (showTraffic: boolean) => void;
 }
 
 // Define map container style
@@ -227,7 +230,9 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   defaultShowRoute = false,
   onRouteToggle,
   onFetchRoute,
-  timeOfDay = 'morning' // Default to morning if not specified
+  timeOfDay = 'morning', // Default to morning if not specified
+  defaultShowTraffic = false, // Default traffic layer visibility
+  onTrafficToggle
 }) => {
   // State for directions response
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
@@ -243,6 +248,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<string>(timeOfDay);
   // Route nodes converted to coordinates
   const [routeCoordinates, setRouteCoordinates] = useState<google.maps.LatLngLiteral[]>([]);
+  // State for traffic layer visibility
+  const [showTraffic, setShowTraffic] = useState<boolean>(defaultShowTraffic);
   
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -278,6 +285,15 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
       onRouteToggle(newShowRoute);
     }
   }, [showRoute, onRouteToggle]);
+  
+  // Handle traffic layer toggle
+  const handleToggleTraffic = useCallback(() => {
+    const newShowTraffic = !showTraffic;
+    setShowTraffic(newShowTraffic);
+    if (onTrafficToggle) {
+      onTrafficToggle(newShowTraffic);
+    }
+  }, [showTraffic, onTrafficToggle]);
   
   // Handle route data from dropdown
   const handleRouteData = useCallback((data: RouteData) => {
@@ -390,16 +406,16 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
 
   // Render the map
   return (
-    <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>
-      {/* MapDrawer for controls */}      <MapDrawer 
+    <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>      {/* MapDrawer for controls */}      <MapDrawer 
         title="Transportation Controls" 
         showFilters={true}
         showRoute={showRoute}
         onToggleRoute={handleToggleRoute}
         onFetchRoute={handleRouteData}
         timeOfDay={currentTimeOfDay}
-      />
-        <GoogleMap
+        showTraffic={showTraffic}
+        onToggleTraffic={handleToggleTraffic}
+      />      <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
         zoom={initialViewState.zoom}
@@ -411,6 +427,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
           styles: mapStyles[currentTimeOfDay as keyof typeof mapStyles] || []
         }}
       >
+        {/* Traffic Layer - Only displayed when showTraffic is true */}
+        {showTraffic && <TrafficLayer />}
         {/* Request directions if we should show route with Roads style */}
         {directionsRequest && shouldShowRoute && lineStyle === 'Roads' && routeCoordinates.length >= 2 && (
           <DirectionsService
@@ -493,9 +511,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
               }
               return null;
             })}
-            
-            {/* Render nodes for MST */}
-            {routeData.nodes.map((nodeId, index) => {
+              {/* Render nodes for MST */}
+            {routeData.nodes.map((nodeId) => {
               const node = getNodeLocation(nodeId);
               if (node) {
                 const coord = { lat: node.latitude, lng: node.longitude };
@@ -564,11 +581,10 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
         }
 
         {/* Render station/stop markers for public transportation */}
-        {shouldShowRoute && routeData?.isPublicTransport && routeData?.nodes && 
-          routeCoordinates.map((coord, index) => {
+        {shouldShowRoute && routeData?.isPublicTransport && routeData?.nodes &&          routeCoordinates.map((coord, index) => {
             // Find if this is a bus stop or metro station by checking the edges
             let stationType = 'default'; // default, bus, or metro
-            let routeNumber = '';
+            // Route number info (might be used for display purposes later)
             
             if (routeData.edges && index < routeCoordinates.length - 1) {
               const nodeId = routeData.nodes[index];
@@ -578,11 +594,10 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
               const edge = routeData.edges.find(e => 
                 (e.from === nodeId && e.to === nextNodeId) || 
                 (e.to === nodeId && e.from === nextNodeId)
-              );
-              
+              );              
               if (edge) {
                 stationType = edge.mode || 'default';
-                routeNumber = edge.route || '';
+                // Store route number if needed in the future
               }
             } else if (routeData.edges && index > 0) {
               // For last node, check previous edge
@@ -593,11 +608,10 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
               const edge = routeData.edges.find(e => 
                 (e.from === prevNodeId && e.to === nodeId) || 
                 (e.to === prevNodeId && e.from === nodeId)
-              );
-              
+              );              
               if (edge) {
                 stationType = edge.mode || 'default';
-                routeNumber = edge.route || '';
+                // Store route number if needed in the future
               }
             }
             
@@ -675,6 +689,9 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
             </div>
           </InfoWindow>
         )}
+
+        {/* Render traffic layer if enabled */}
+        {showTraffic && <TrafficLayer />}
       </GoogleMap>
     </Box>
   );
