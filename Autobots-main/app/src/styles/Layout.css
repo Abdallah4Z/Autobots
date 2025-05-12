@@ -1,0 +1,62 @@
+/* Layout.css */
+
+/* Layout Container */
+.layout-container {
+    display: flex;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  
+  /* Main Content Area */
+  .layout-main {
+    flex-grow: 1;
+    padding: 24px;
+    margin-top: 64px;
+    transition: margin-left 0.2s;
+    overflow-y: auto;
+    width: 100%;
+  }
+  
+  /* Drawer Styles */
+  .layout-drawer .MuiDrawer-paper {
+    top: 64px;
+    height: calc(100% - 64px);
+    overflow-x: hidden;
+    white-space: nowrap;
+    transition: width 0.2s;
+  }
+  
+  .layout-drawer-expanded .MuiDrawer-paper {
+    width: 180px;
+  }
+  
+  .layout-drawer-collapsed .MuiDrawer-paper {
+    width: 60px;
+  }
+  
+  /* Navigation Items */
+  .nav-item {
+    margin: 4px 0;
+  }
+  
+  .nav-button {
+    border-radius: 8px;
+    margin: 0 8px;
+    transition: background-color 0.2s;
+  }
+  
+  .nav-button-selected {
+    background-color: rgba(25, 118, 210, 0.08);
+  }
+  
+  .nav-button:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+  
+  .nav-icon {
+    color: rgba(0, 0, 0, 0.54);
+  }
+  
+  .nav-button-selected .nav-icon {
+    color: #1976d2;
+  }
