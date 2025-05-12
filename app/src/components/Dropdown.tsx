@@ -24,13 +24,25 @@ interface DropdownProps {
   }) => void;
   onFetchRoute?: (data?: any) => void;
   currentRouteData?: any;  // To store current route data if available
+  // Added props for route toggle
+  showRoute?: boolean;
+  onToggleRoute?: () => void;
+  // Added props for traffic toggle
+  showTraffic?: boolean;
+  onToggleTraffic?: () => void;
 }
 
 const Dropdown: React.FC<DropdownProps> = ({ 
   className,
   onValuesChange,
   onFetchRoute,
-  currentRouteData
+  currentRouteData,
+  // Added route toggle props
+  showRoute = true,
+  onToggleRoute,
+  // Added traffic toggle props
+  showTraffic = false,
+  onToggleTraffic
 }) => {
   // Set default values
   const [Origin, setOrigin] = useState('1');
@@ -192,16 +204,18 @@ const Dropdown: React.FC<DropdownProps> = ({
           console.error('Failed to parse JSON:', jsonError);
           throw new Error('Response is not valid JSON');
         }
-        
-        // Process the emergency route data
+          // Process the emergency route data
         if (data && data.edges && Array.isArray(data.edges)) {
           const orderedNodes = extractOrderedNodes(data.edges);
           console.log('Ordered emergency route nodes:', orderedNodes);
+            // Extract the estimated time properly
+          const estimatedTime = data.estimated_response_time || data.total_time || data.estimated_time || data.time;
+          console.log('Emergency response estimated time:', estimatedTime);
           
           const routeInfo = {
             nodes: orderedNodes,
             totalDistance: data.total_distance,
-            totalTime: data.total_time,
+            totalTime: estimatedTime, // Use the properly extracted time value
             edges: data.edges,
             lineStyle: Lines,
             isEmergencyRoute: true,
@@ -286,12 +300,14 @@ const Dropdown: React.FC<DropdownProps> = ({
               totalTime += step.stops * 5;     // Rough estimate: 5 minutes per stop
             }
           });
+            // Extract estimated time from response or use calculated value
+          const estimatedTime = data.total_time || data.estimated_time || totalTime;
           
           // Create route information object
           const routeInfo = {
             nodes: orderedNodes,
-            totalDistance: totalDistance,
-            totalTime: totalTime,
+            totalDistance: data.total_distance || totalDistance,
+            totalTime: estimatedTime, // Use the extracted time value
             edges: edges,
             lineStyle: Lines,
             isPublicTransport: true,
@@ -353,13 +369,16 @@ const Dropdown: React.FC<DropdownProps> = ({
             uniqueNodes.add(edge.from);
             uniqueNodes.add(edge.to);
           });
+            // Extract estimated time consistently with other route types
+          const estimatedTime = data.total_time || data.estimated_time || data.time || 0;
+          console.log('MST estimated time:', estimatedTime);
           
           // Additional route information with line style preference
           const routeInfo = {
             // All unique nodes in the MST
             nodes: Array.from(uniqueNodes),
             totalDistance: data.total_distance || 0,
-            totalTime: data.total_time || 0,
+            totalTime: estimatedTime, // Use the properly extracted time value
             // Pass the raw edges directly without modification
             edges: data.edges,
             lineStyle: Lines,
@@ -432,12 +451,15 @@ const Dropdown: React.FC<DropdownProps> = ({
           // Create ordered list of nodes (from origin to destination)
           const orderedNodes = extractOrderedNodes(data.edges);
           console.log('Ordered route nodes:', orderedNodes);
+            // Extract estimated time consistently with other route types
+          const estimatedTime = data.total_time || data.estimated_time || data.time;
+          console.log('Route estimated time:', estimatedTime);
           
           // Additional route information with line style preference
           const routeInfo = {
             nodes: orderedNodes,
             totalDistance: data.total_distance,
-            totalTime: data.total_time,
+            totalTime: estimatedTime, // Use the properly extracted time value
             edges: data.edges,
             lineStyle: Lines,
             isPublicTransport: false
@@ -466,7 +488,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   };
 
   // Helper function to extract ordered list of nodes from edges
-  const extractOrderedNodes = (edges: Array<{from: string, to: string}>): string[] => {
+  const extractOrderedNodes = (edges: Array<{ from: string; to: string }>): string[] => {
     if (!edges || edges.length === 0) {
       return [];
     }
@@ -482,7 +504,7 @@ const Dropdown: React.FC<DropdownProps> = ({
     return orderedNodes;
   };
     return (
-    <Box className={className} sx={{ p: 1 }}>
+          <Box className={className} sx={{ p: 1 }}>
       <Typography variant="h5" sx={{ mb: 1, ml: 1 }}>Map Filters</Typography>
 
       <Grid container spacing={2}>
@@ -678,6 +700,61 @@ const Dropdown: React.FC<DropdownProps> = ({
             Fetch Route
           </Button>
         </Grid>
+
+        {/* Route toggle button */}
+        {onToggleRoute && (
+          <Grid item xs={18} sm={8} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Button 
+              variant="contained"
+              color="primary"
+              onClick={onToggleRoute}
+              className="route-toggle-btn"
+              fullWidth
+              sx={{ 
+                height: '3.5rem',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.05)'
+                },
+                ...(Time === 'night' && {
+                  backgroundColor: '#38414e',
+                  color: '#9ca5b3',
+                  '&:hover': {
+                    backgroundColor: '#515c6d',
+                    transform: 'scale(1.05)'
+                  }
+                })
+              }}
+            >
+              {showRoute ? 'Hide Route' : 'Show Route'}
+            </Button>
+          </Grid>
+        )}
+
+        {/* Traffic toggle button */}
+        {onToggleTraffic && (
+          <Grid item xs={18} sm={8} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Button 
+              variant="contained"
+              color={showTraffic ? "secondary" : "primary"}
+              onClick={onToggleTraffic}
+              className="traffic-toggle-btn"
+              fullWidth
+              sx={{ 
+                height: '3.5rem',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.05)'
+                },
+                ...(Time === 'night' && {
+                  backgroundColor: showTraffic ? '#ac4646' : '#38414e',
+                })
+              }}
+            >
+              {showTraffic ? 'Hide Traffic' : 'Show Traffic'}
+            </Button>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );
