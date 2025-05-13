@@ -20,6 +20,9 @@ interface MapDrawerProps {
   onFetchRoute?: (data: any) => void;
   // Time of day for theming
   timeOfDay?: string;
+  // Traffic layer toggle
+  showTraffic?: boolean;
+  onToggleTraffic?: () => void;
 }
 
 const MapDrawer: React.FC<MapDrawerProps> = ({
@@ -29,7 +32,9 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
   showRoute = true,
   onToggleRoute,
   onFetchRoute,
-  timeOfDay = 'morning'
+  timeOfDay = 'morning',
+  showTraffic = false,
+  onToggleTraffic
 }) => {
   // State to control drawer open/close with hover
   const [isOpen, setIsOpen] = useState(false);
@@ -261,8 +266,7 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
           // onMouseLeave={handleMouseLeave} // Added to detect when mouse leaves drawer
         >
           {showFilters && (
-            <>
-              <Box sx={{ 
+            <>              <Box sx={{ 
                 flex: '1 1 auto', 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -278,38 +282,16 @@ const MapDrawer: React.FC<MapDrawerProps> = ({
                     transform: 'translateY(0)'
                   }
                 }
-              }}>                {/* Pass the route data handler and timeOfDay to Dropdown */}
+              }}>
+                {/* Pass all required props to Dropdown */}
                 <Dropdown 
                   onFetchRoute={onFetchRoute} 
                   currentRouteData={{ timeOfDay }}
+                  showRoute={showRoute}
+                  onToggleRoute={onToggleRoute}
+                  showTraffic={showTraffic}
+                  onToggleTraffic={onToggleTraffic}
                 />
-                
-                {/* Route toggle button next to dropdown */}
-                {onToggleRoute && (
-                  <Button 
-                    variant="contained"
-                    color="primary"
-                    onClick={onToggleRoute}
-                    className="route-toggle-btn"                    sx={{ 
-                      ml: 2,
-                      marginTop: 5,
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        transform: 'scale(1.05)'
-                      },
-                      ...(isDarkMode && {
-                        backgroundColor: '#38414e',
-                        color: '#9ca5b3',
-                        '&:hover': {
-                          backgroundColor: '#515c6d',
-                          transform: 'scale(1.05)'
-                        }
-                      })
-                    }}
-                  >
-                    {showRoute ? 'Hide Route' : 'Show Route'}
-                  </Button>
-                )}
               </Box>
             </>
           )}

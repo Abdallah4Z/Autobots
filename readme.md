@@ -109,6 +109,7 @@ npm i react-router-dom
 npm i axios leaflet react-leaflet
 npm i recharts
 npm i @react-google-maps/api
+npm install
 ```
 
 ### 🎨 UI Libraries & Frameworks
@@ -156,8 +157,8 @@ pip install flask networkx pandas matplotlib flask-cors
 To run the backend Flask server, navigate to the `backend/src/app` directory and execute the following command:
 
 ```bash
-cd backend/src/app
-flask --app app run
+cd backend/src
+python app.py
 ```
 
 ## 🔍 Using the Application
@@ -188,5 +189,6 @@ Comprehensive documentation is available in the `docs/` directory:
 
 ## ❓ Need Help?
 If you encounter any issues during setup or development, check the documentation first or reach out to the development team.
+u also need our api key to run this but we obviously didnt push it :)
 
----
+
