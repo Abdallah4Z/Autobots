@@ -1,0 +1,53 @@
+{
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.2",
+    "@react-google-maps/api": "^2.20.6",
+    "@react-oauth/google": "^0.12.1",
+    "@reduxjs/toolkit": "^2.7.0",
+    "@types/mapbox-gl": "^3.4.1",
+    "@types/maplibre-gl": "^1.13.2",
+    "aframe": "^1.7.1",
+    "aframe-extras": "^7.5.4",
+    "chart.js": "^4.4.9",
+    "jwt-decode": "^4.0.0",
+    "leaflet": "^1.9.4",
+    "mapbox-gl": "^3.11.1",
+    "maplibre-gl": "^5.4.0",
+    "mui": "^0.0.1",
+    "react": "^19.0.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.0.0",
+    "react-force-graph": "^1.47.6",
+    "react-leaflet": "^5.0.0",
+    "react-map-gl": "^8.0.4",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.5.0",
+    "store": "^2.0.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.26.1",
+    "vite": "^6.3.5"
+  }
+}
