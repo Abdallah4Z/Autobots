@@ -13,6 +13,19 @@ dist-ssr
 *.local
 .env
 /env
+package.json
+
+# Ignore package.json files
+**/package.json
+**/package-lock.json
+
+# Node.js / npm specific files
+**/node_modules
+**/.npm
+**/.node_repl_history
+**/.pnp
+**/.pnp.js
+**/.yarn-integrity
 
 # Editor directories and files
 .vscode/*
@@ -28,6 +41,28 @@ dist-ssr
 *~
 *.pdf
 
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
 # Python bytecode - comprehensive version
 __pycache__/
 */__pycache__/
@@ -38,8 +73,25 @@ __pycache__/
 .Python
 *.pyc
 
+# Python cache files
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/src/**/__pycache__/
+backend/src/app/**/__pycache__/
+backend/src/app/**/*.pyc
+
+# Specifically target all these directories (based on screenshot)
+backend/src/app/__pycache__/
+backend/src/app/algorithm/__pycache__/
+backend/src/app/api/__pycache__/
+backend/src/app/graph/__pycache__/
+
 # Remove specific pattern for your project structure
 /backend/src/app/api/__pycache__/
 /backend/src/app/models/__pycache__/
 /backend/src/app/services/__pycache__/
 /backend/src/app/utils/__pycache__/
+/backend/src/app/graph/__pycache__/
