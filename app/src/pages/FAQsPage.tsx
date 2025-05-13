@@ -55,20 +55,44 @@ const FAQsPage: React.FC = () => {
           </Typography>
         </Box>
 
-        {faqs.map((faq, index) => (
-          <Accordion key={index} sx={{ mb: 2 }}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              aria-controls={`panel${index}-content`}
-              id={`panel${index}-header`}
-            >
-              <Typography variant="h6">{faq.question}</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography>{faq.answer}</Typography>
-            </AccordionDetails>
-          </Accordion>
-        ))}
+        {/* Scrollable container for FAQs */}
+        <Box 
+          sx={{ 
+            height: '400px', 
+            overflowY: 'auto',
+            pr: 2, // Add padding right for better appearance with scrollbar
+            // Custom scrollbar styling
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: '#f1f1f1',
+              borderRadius: '10px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#888',
+              borderRadius: '10px',
+              '&:hover': {
+                backgroundColor: '#555',
+              },
+            },
+          }}
+        >
+          {faqs.map((faq, index) => (
+            <Accordion key={index} sx={{ mb: 2 }}>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls={`panel${index}-content`}
+                id={`panel${index}-header`}
+              >
+                <Typography variant="h6">{faq.question}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography>{faq.answer}</Typography>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
       </Container>
     </Layout>
   );

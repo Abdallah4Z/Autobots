@@ -1,7 +1,7 @@
 import React from 'react';
 import { Fab, Tooltip, useTheme } from '@mui/material';
 import HelpIcon from '@mui/icons-material/Help';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface FloatingHelpButtonProps {
   position?: {
@@ -17,6 +17,12 @@ const FloatingHelpButton: React.FC<FloatingHelpButtonProps> = ({
 }) => {
   const navigate = useNavigate();
   const theme = useTheme();
+  const location = useLocation();
+  
+  // Don't render the button if the current path is '/faqs'
+  if (location.pathname === '/faqs') {
+    return null;
+  }
   
   return (
     <Tooltip title="FAQs & Help" arrow placement="right">
