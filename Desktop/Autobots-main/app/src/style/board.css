@@ -1,0 +1,31 @@
+/* Board.css */
+.board {
+    width: 100;
+    min-width: 200px;
+    max-width: 300px;
+    background-color: rgba(128, 128, 128, 0.073);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .board-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  
+  .task-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .task-cards > .MuiCard-root {
+    transition: all 1s ease;
+  }
+  
+  .task-cards > .MuiCard-root:hover {
+    transform: translateY(-4px);
+  }
+  
