@@ -26,6 +26,7 @@ dist-ssr
 *.sw?
 *.txt
 *~
+*.pdf
 
 # Python bytecode - comprehensive version
 __pycache__/
