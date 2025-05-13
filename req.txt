@@ -1,4 +1,4 @@
-
+maplibre-gl @https://types/maplibre-gl
 flask
 maplibre-gl==0.1.0
 npm install gh-pages --save-dev
