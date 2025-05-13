@@ -212,14 +212,17 @@ const Dropdown: React.FC<DropdownProps> = ({
         }
         
         // Process the emergency route data
-        if (data && data.edges && Array.isArray(data.edges)) {
-          const orderedNodes = extractOrderedNodes(data.edges);
+        if (data && data.edges && Array.isArray(data.edges)) {          const orderedNodes = extractOrderedNodes(data.edges);
           console.log('Ordered emergency route nodes:', orderedNodes);
+          
+          // Extract the estimated time properly from the API response
+          const estimatedTime = data.estimated_response_time || data.total_time;
+          console.log('Emergency response estimated time:', estimatedTime);
           
           const routeInfo = {
             nodes: orderedNodes,
             totalDistance: data.total_distance,
-            totalTime: data.total_time,
+            totalTime: estimatedTime,
             edges: data.edges,
             lineStyle: Lines,
             isEmergencyRoute: true,
