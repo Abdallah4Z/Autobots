@@ -34,4 +34,6 @@ cd backend/src
 python app.py
 ```
 
+u also need our api key to run this but we obviously didnt push it :)
+
 
