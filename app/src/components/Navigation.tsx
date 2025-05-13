@@ -23,10 +23,10 @@ interface NavigationProps {
 const navItems = [
   { text: 'Home', icon: <HomeRoundedIcon />, path: '/home' },
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Network', icon: <MapRoundedIcon />, path: '/network' },
-  { text: 'Traffic Flow', icon: <TrafficRoundedIcon />, path: '/traffic-flow' },
-  { text: 'Emergency', icon: <EmergencyRoundedIcon />, path: '/emergency' },
-  { text: 'Reports', icon: <AssessmentRoundedIcon />, path: '/reports' },
+  { text: 'Network', icon: <MapRoundedIcon />, path: '/' },
+  { text: 'Traffic Flow', icon: <TrafficRoundedIcon />, path: '/' },
+  { text: 'Emergency', icon: <EmergencyRoundedIcon />, path: '/contact' },
+  { text: 'Reports', icon: <AssessmentRoundedIcon />, path: '/' },
 ];
 
 const Navigation: React.FC<NavigationProps> = ({ open }) => {
