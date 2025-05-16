@@ -216,7 +216,8 @@ const Dropdown: React.FC<DropdownProps> = ({
           console.log('Ordered emergency route nodes:', orderedNodes);
           
           // Extract the estimated time properly from the API response
-          const estimatedTime = extractEstimatedTime(data);
+          const estimatedTime = data.estimated_response_time || data.total_time || data.estimated_time || data.time;
+
           console.log('Emergency response estimated time:', estimatedTime);
           
           const routeInfo = {
