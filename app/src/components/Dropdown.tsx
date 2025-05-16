@@ -140,7 +140,21 @@ const Dropdown: React.FC<DropdownProps> = ({
       textOverflow: 'ellipsis'
     }
   };
-    // Controls the dropdown menu size
+
+  // Fix the label positioning to match the TimeOFday dropdown
+  const labelStyle = {
+    fontSize: '1.2rem',
+    transform: 'translate(14px, -9px) scale(0.75)', // Position it above the field outline
+    backgroundColor: 'white',
+    px: 0.5,  // Horizontal padding
+    "&.MuiInputLabel-shrink": {  // Make sure it's always displayed like a shrunken label
+      transform: 'translate(14px, -9px) scale(0.75)',
+      backgroundColor: 'white',
+      px: 0.5,
+    }
+  };
+  
+  // Controls the dropdown menu size
   const menuProps = {
     PaperProps: {
       style: {
@@ -513,7 +527,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         {/* Location */}
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="location-label" sx={{ fontSize: '1.2rem' }}>Origin</InputLabel>            <Select
+            <InputLabel id="location-label" sx={labelStyle}>Origin</InputLabel>            <Select
               labelId="location-label"
               id="location-select"
               value={Origin}
@@ -554,7 +568,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         {/* Category */}
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="category-label" sx={{ fontSize: '1.2rem' }}>Destination</InputLabel>            <Select
+            <InputLabel id="category-label" sx={labelStyle}>Destination</InputLabel>            <Select
               labelId="category-label"
               id="category-select"
               value={Destination}
@@ -595,7 +609,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         {/* Time Range */}
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="time-range-label" sx={{ fontSize: '1.2rem' }}>TimeOFday</InputLabel>            <Select
+            <InputLabel id="time-range-label" sx={labelStyle}>TimeOFday</InputLabel>            <Select
               labelId="time-range-label"
               id="time-range-select"
               value={Time}
@@ -613,7 +627,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Route-label" sx={{ fontSize: '1.2rem' }}>Route</InputLabel>            <Select
+            <InputLabel id="Route-label" sx={labelStyle}>Route</InputLabel>            <Select
               labelId="Route-label"
               id="Route-select"
               value={Routes}
@@ -631,7 +645,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Line-label" sx={{ fontSize: '1.2rem' }}>Line</InputLabel>            <Select
+            <InputLabel id="Line-label" sx={labelStyle}>Line</InputLabel>            <Select
               labelId="Line-label"
               id="Line-select"
               value={Lines}
@@ -657,7 +671,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         </Grid>
         <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="Algo-label" sx={{ fontSize: '1.2rem' }}>Algorithm</InputLabel>            <Select
+            <InputLabel id="Algo-label" sx={labelStyle}>Algorithm</InputLabel>            <Select
               labelId="Algo-label"
               id="Algo-select"
               value={Algo}
@@ -674,7 +688,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                </Grid>
                <Grid item xs={18} sm={8} md={4}>
           <FormControl fullWidth>
-            <InputLabel id="EM-label" sx={{ fontSize: '1.2rem' }}>Emergency</InputLabel>            <Select
+            <InputLabel id="EM-label" sx={labelStyle}>Emergency</InputLabel>            <Select
               labelId="EM-label"
               id="EM-select"
               value={Em}
