@@ -15,27 +15,27 @@ const ContactInfo: React.FC = () => {
   const socialLinks = [
     {
       icon: facebookIcon,
-      link: "https://www.facebook.com/STS/",
+      link: "#",
       altText: "Facebook"
     },
     {
       icon: gitHubIcon,
-      link: "https://github.com/STS",
+      link: "#",
       altText: "GitHub"
     },
     {
       icon: linkedInIcon,
-      link: "https://linkedin.com/in/STS",
+      link: "#",
       altText: "LinkedIn"
     },
     {
       icon: instagramIcon,
-      link: "https://instagram.com/STS",
+      link: "#",
       altText: "Instagram"
     },
     {
       icon: discordIcon,
-      link: "https://discord.com/STS",
+      link: "#",
       altText: "Discord"
     }
   ];
