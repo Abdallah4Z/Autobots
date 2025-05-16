@@ -1,8 +1,0 @@
-branchToWorkOn: AhmedBranch
-
-- fix hover animation of navbar (ahmed did it)
-- MST network representation
-- public transportation network representation
-- make a better navbar than ahmed's
-	- hover animation using a toggle button
-	- maybe transparent or translucent
