@@ -3,6 +3,7 @@ import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, B
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Layout from '../components/Layout';
 import { useNavigate, useLocation } from 'react-router-dom';
+import '../styles/Layout.css';
 
 const FAQsPage: React.FC = () => {
   // FAQ data
@@ -54,7 +55,7 @@ const FAQsPage: React.FC = () => {
 
   return (
     <Layout>
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth="md" className="faqs-page-container">
         <Typography variant="h3" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
           Frequently Asked Questions
         </Typography>
@@ -67,7 +68,7 @@ const FAQsPage: React.FC = () => {
         </Box>
 
         {/* Container for FAQs */}
-        <Box>
+        <Box className="faqs-accordion-list">
           {faqs.map((faq, index) => (
             <Accordion key={index} sx={{ mb: 2 }}>
               <AccordionSummary
