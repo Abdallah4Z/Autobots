@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, DirectionsService, DirectionsRenderer, Polyline, TrafficLayer } from '@react-google-maps/api';
 import MapDrawer from './MapDrawer';
 import { Box, Typography, Paper, IconButton, Collapse } from '@mui/material';
-import { cityData } from '../pages/cityData';
+import { cityData } from '../pages/cityData';                          
 import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -294,11 +294,11 @@ const RouteInfoPanel: React.FC<RouteInfoPanelProps> = ({ routeData, showPanel, o
                 Public Transport Route:
               </Typography>
               
-              {routeData.totalTime !== undefined && (
+              {/* {routeData.totalTime !== undefined && (
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   <strong>Estimated Time:</strong> {routeData.totalTime.toFixed(1)} min
                 </Typography>
-              )}
+              )} */}
               {routeData.steps.map((step, idx) => (
                 <Box key={idx} sx={{ mb: 1, pl: 1, borderLeft: '2px solid #ccc' }}>
                   <Typography variant="body2">
