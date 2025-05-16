@@ -1,8 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, DirectionsService, DirectionsRenderer, Polyline } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, DirectionsService, DirectionsRenderer, Polyline, TrafficLayer } from '@react-google-maps/api';
 import MapDrawer from './MapDrawer';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Paper, IconButton, Collapse } from '@mui/material';
 import { cityData } from '../pages/cityData';
+import InfoIcon from '@mui/icons-material/Info';
+import CloseIcon from '@mui/icons-material/Close';
 
 // Map styles for different times of day
 const mapStyles = {  morning: [
@@ -138,6 +140,9 @@ interface TransportationMapProps {
   onFetchRoute?: (data: any) => void;
   // Time of day for styling the map
   timeOfDay?: string;
+  // Traffic display toggle
+  defaultShowTraffic?: boolean;
+  onTrafficToggle?: (showTraffic: boolean) => void;
 }
 
 // Define map container style
@@ -215,6 +220,171 @@ const EdgeDirectionsRenderer: React.FC<EdgeDirectionsProps> = ({ fromNode, toNod
   );
 };
 
+// Route Info Panel Component
+interface RouteInfoPanelProps {
+  routeData: RouteData | null;
+  showPanel: boolean;
+  onTogglePanel: () => void;
+}
+
+const RouteInfoPanel: React.FC<RouteInfoPanelProps> = ({ routeData, showPanel, onTogglePanel }) => {
+  if (!routeData) return null;
+
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end'
+      }}
+    >
+      {!showPanel && (
+        <IconButton
+          onClick={onTogglePanel}
+          sx={{
+            backgroundColor: 'white',
+            boxShadow: 3,
+            mb: 1,
+            '&:hover': {
+              backgroundColor: '#f5f5f5',
+            }
+          }}
+          size="small"
+          aria-label="show route info"
+        >
+          <InfoIcon />
+        </IconButton>
+      )}
+      
+      <Collapse in={showPanel}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 2,
+            maxWidth: 300,
+            maxHeight: 400,
+            overflowY: 'auto',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)'
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="h6">Route Details</Typography>
+            <IconButton size="small" onClick={onTogglePanel} aria-label="close route info">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+          
+          {/* {routeData.totalDistance !== undefined && (
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Distance:</strong> {routeData.totalDistance.toFixed(2)} km
+            </Typography>
+          )}
+          
+          {routeData.totalTime !== undefined && !routeData.isEmergencyRoute && (
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Estimated Time:</strong> {routeData.totalTime.toFixed(2)} min
+            </Typography>
+          )} */}          {routeData.isPublicTransport && routeData.steps && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
+                Public Transport Route:
+              </Typography>
+              
+              {routeData.totalTime !== undefined && (
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  <strong>Estimated Time:</strong> {routeData.totalTime.toFixed(1)} min
+                </Typography>
+              )}
+              {routeData.steps.map((step, idx) => (
+                <Box key={idx} sx={{ mb: 1, pl: 1, borderLeft: '2px solid #ccc' }}>
+                  <Typography variant="body2">
+                    <strong>{step.mode === 'metro' ? '🚇 Metro' : '🚌 Bus'} {step.route}</strong>
+                  </Typography>
+                  <Typography variant="body2">
+                    From: {step.start}
+                  </Typography>
+                  <Typography variant="body2">
+                    To: {step.end}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {step.stops} stops
+                  </Typography>
+                </Box>
+              ))}
+            </>
+          )}
+            {routeData.isEmergencyRoute && (
+            <>              <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
+                Emergency Route ({routeData.emergencyType})
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                Priority path with traffic signal override and lane clearance.
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Estimated Time:</strong> {routeData.totalTime !== undefined ? `${routeData.totalTime.toFixed(1)} min` : 'Calculating...'}
+              </Typography>
+              {routeData.totalTime !== undefined && (
+                <>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    <strong>Standard Vehicle Time:</strong> {(routeData.totalTime * 1.4).toFixed(1)} min
+                  </Typography>
+                  <Box sx={{ mt: 1, p: 1, bgcolor: 'error.main', borderRadius: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                      Emergency Response Time: {routeData.totalTime.toFixed(1)} min
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'white', display: 'block' }}>
+                      Up to 40% faster than standard routes
+                    </Typography>
+                  </Box>
+                </>
+              )}
+            </>
+          )}
+            {routeData.isMST && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
+                Minimum Spanning Tree
+              </Typography>
+              <Typography variant="body2">
+                Optimal infrastructure network connecting all points.
+              </Typography>
+
+              {routeData.edges && (
+                <Typography variant="body2">
+                  <strong>Connections:</strong> {routeData.edges.length}
+                </Typography>
+              )}
+            </>
+          )}
+            {!routeData.isPublicTransport && !routeData.isEmergencyRoute && !routeData.isMST && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
+                Standard Road Route
+              </Typography>
+              
+              {routeData.totalDistance !== undefined && (
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Distance:</strong> {routeData.totalDistance.toFixed(2)} km
+                </Typography>
+              )}
+              
+              {routeData.totalTime !== undefined && (
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Estimated Time:</strong> {routeData.totalTime.toFixed(1)} min
+                </Typography>
+              )}
+            </>
+          )}
+        </Paper>
+      </Collapse>
+    </Box>
+  );
+};
+
 const TransportationMap: React.FC<TransportationMapProps> = ({
   initialViewState = {
     longitude: 31.23, // Default to Cairo center
@@ -227,7 +397,9 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   defaultShowRoute = false,
   onRouteToggle,
   onFetchRoute,
-  timeOfDay = 'morning' // Default to morning if not specified
+  timeOfDay = 'morning', // Default to morning if not specified
+  defaultShowTraffic = false, // Default traffic layer visibility
+  onTrafficToggle
 }) => {
   // State for directions response
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
@@ -243,8 +415,19 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<string>(timeOfDay);
   // Route nodes converted to coordinates
   const [routeCoordinates, setRouteCoordinates] = useState<google.maps.LatLngLiteral[]>([]);
-  
-  const mapRef = useRef<google.maps.Map | null>(null);
+  // State for traffic layer visibility
+  const [showTraffic, setShowTraffic] = useState<boolean>(defaultShowTraffic);
+  // State for route info panel visibility
+  const [showRouteInfoPanel, setShowRouteInfoPanel] = useState<boolean>(false);
+    const mapRef = useRef<google.maps.Map | null>(null);
+  // Add refs to store current map view state
+  const currentViewState = useRef({
+    center: {
+      lat: initialViewState.latitude,
+      lng: initialViewState.longitude
+    },
+    zoom: initialViewState.zoom
+  });
 
   // Load the Google Maps script
   const { isLoaded, loadError } = useJsApiLoader({
@@ -254,23 +437,62 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
     libraries: ['places']
   });
   
-  // Define the map center based on initialViewState
-  const center = {
-    lat: initialViewState.latitude,
-    lng: initialViewState.longitude
-  };
+  // Define the map center using our stored view state
+  const center = currentViewState.current.center;
+  
+  // Enhanced map load handler
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
+    
+    // Add listener to track view state changes
+    map.addListener('bounds_changed', () => {
+      if (mapRef.current) {
+        const center = mapRef.current.getCenter();
+        const zoom = mapRef.current.getZoom();
+        
+        if (center && zoom) {
+          currentViewState.current = {
+            center: { 
+              lat: center.lat(), 
+              lng: center.lng() 
+            },
+            zoom: zoom
+          };
+        }
+      }
+    });
   }, []);
   
-  // Effect to update the map style when timeOfDay prop changes
+  // Effect to show route info panel when route data is available
+  useEffect(() => {
+    if (routeData && showRoute) {
+      setShowRouteInfoPanel(true);
+    }
+  }, [routeData, showRoute]);
+    // Effect to update the map style when timeOfDay prop changes
+  // while preserving current map view state
   useEffect(() => {
     if (timeOfDay && timeOfDay !== currentTimeOfDay) {
+      // Store current view state before updating time of day
+      if (mapRef.current) {
+        const mapCenter = mapRef.current.getCenter();
+        const mapZoom = mapRef.current.getZoom();
+        
+        if (mapCenter && mapZoom) {
+          currentViewState.current = {
+            center: { 
+              lat: mapCenter.lat(), 
+              lng: mapCenter.lng() 
+            },
+            zoom: mapZoom
+          };
+        }
+      }
+      
       setCurrentTimeOfDay(timeOfDay.toLowerCase());
     }
   }, [timeOfDay]);
-
-  // Handle route toggle
+  // Handle route toggle while preserving map view state
   const handleToggleRoute = useCallback(() => {
     const newShowRoute = !showRoute;
     setShowRoute(newShowRoute);
@@ -279,9 +501,40 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
     }
   }, [showRoute, onRouteToggle]);
   
-  // Handle route data from dropdown
+  // Handle traffic layer toggle while preserving map view state
+  const handleToggleTraffic = useCallback(() => {
+    const newShowTraffic = !showTraffic;
+    setShowTraffic(newShowTraffic);
+    if (onTrafficToggle) {
+      onTrafficToggle(newShowTraffic);
+    }
+  }, [showTraffic, onTrafficToggle]);
+  
+  // Handle route info panel toggle
+  const handleToggleRouteInfoPanel = useCallback(() => {
+    setShowRouteInfoPanel(prev => !prev);
+  }, []);
+    // Handle route data from dropdown while preserving map view state
   const handleRouteData = useCallback((data: RouteData) => {
     console.log('Route data received in TransportationMap:', data);
+    
+    // Store the current map view state before updating route data
+    // This ensures we don't reset the view when new route data arrives
+    if (mapRef.current) {
+      const mapCenter = mapRef.current.getCenter();
+      const mapZoom = mapRef.current.getZoom();
+      
+      if (mapCenter && mapZoom) {
+        currentViewState.current = {
+          center: { 
+            lat: mapCenter.lat(), 
+            lng: mapCenter.lng() 
+          },
+          zoom: mapZoom
+        };
+      }
+    }
+    
     setRouteData(data);
     
     // Update line style preference if provided
@@ -328,10 +581,25 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
       onFetchRoute(data);
     }
   }, [onFetchRoute]);
-  
-  // Effect to handle line style changes
+    // Effect to handle line style changes while preserving view state
   useEffect(() => {
     if (routeData && routeData.lineStyle !== lineStyle) {
+      // Save current view state before changing line style
+      if (mapRef.current) {
+        const mapCenter = mapRef.current.getCenter();
+        const mapZoom = mapRef.current.getZoom();
+        
+        if (mapCenter && mapZoom) {
+          currentViewState.current = {
+            center: { 
+              lat: mapCenter.lat(), 
+              lng: mapCenter.lng() 
+            },
+            zoom: mapZoom
+          };
+        }
+      }
+      
       // Update the routeData with the new line style
       const updatedRouteData = {
         ...routeData,
@@ -342,10 +610,26 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
       handleRouteData(updatedRouteData);
     }
   }, [lineStyle, routeData]);
-
-  // Directions callback handler
+  // Directions callback handler with view state preservation
   const directionsCallback = (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
     console.log('Directions response:', status, response);
+    
+    // Save current map view state before updating directions
+    if (mapRef.current) {
+      const mapCenter = mapRef.current.getCenter();
+      const mapZoom = mapRef.current.getZoom();
+      
+      if (mapCenter && mapZoom) {
+        currentViewState.current = {
+          center: { 
+            lat: mapCenter.lat(), 
+            lng: mapCenter.lng() 
+          },
+          zoom: mapZoom
+        };
+      }
+    }
+    
     if (status === 'OK' && response) {
       setDirectionsResponse(response);
     } else {
@@ -390,19 +674,19 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
 
   // Render the map
   return (
-    <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>
-      {/* MapDrawer for controls */}      <MapDrawer 
+    <Box sx={{ position: 'relative', height: '100vh', width: '100vw' }}>      {/* MapDrawer for controls */}      <MapDrawer 
         title="Transportation Controls" 
         showFilters={true}
         showRoute={showRoute}
         onToggleRoute={handleToggleRoute}
         onFetchRoute={handleRouteData}
         timeOfDay={currentTimeOfDay}
-      />
-        <GoogleMap
+        showTraffic={showTraffic}
+        onToggleTraffic={handleToggleTraffic}
+      />      <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
-        zoom={initialViewState.zoom}
+        zoom={currentViewState.current.zoom}
         onLoad={onMapLoad}
         options={{ 
           streetViewControl: false,
@@ -411,6 +695,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
           styles: mapStyles[currentTimeOfDay as keyof typeof mapStyles] || []
         }}
       >
+        {/* Traffic Layer - Only displayed when showTraffic is true */}
+        {showTraffic && <TrafficLayer />}
         {/* Request directions if we should show route with Roads style */}
         {directionsRequest && shouldShowRoute && lineStyle === 'Roads' && routeCoordinates.length >= 2 && (
           <DirectionsService
@@ -493,9 +779,8 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
               }
               return null;
             })}
-            
-            {/* Render nodes for MST */}
-            {routeData.nodes.map((nodeId, index) => {
+              {/* Render nodes for MST */}
+            {routeData.nodes.map((nodeId) => {
               const node = getNodeLocation(nodeId);
               if (node) {
                 const coord = { lat: node.latitude, lng: node.longitude };
@@ -564,11 +849,10 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
         }
 
         {/* Render station/stop markers for public transportation */}
-        {shouldShowRoute && routeData?.isPublicTransport && routeData?.nodes && 
-          routeCoordinates.map((coord, index) => {
+        {shouldShowRoute && routeData?.isPublicTransport && routeData?.nodes &&          routeCoordinates.map((coord, index) => {
             // Find if this is a bus stop or metro station by checking the edges
             let stationType = 'default'; // default, bus, or metro
-            let routeNumber = '';
+            // Route number info (might be used for display purposes later)
             
             if (routeData.edges && index < routeCoordinates.length - 1) {
               const nodeId = routeData.nodes[index];
@@ -578,11 +862,10 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
               const edge = routeData.edges.find(e => 
                 (e.from === nodeId && e.to === nextNodeId) || 
                 (e.to === nodeId && e.from === nextNodeId)
-              );
-              
+              );              
               if (edge) {
                 stationType = edge.mode || 'default';
-                routeNumber = edge.route || '';
+                // Store route number if needed in the future
               }
             } else if (routeData.edges && index > 0) {
               // For last node, check previous edge
@@ -593,11 +876,10 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
               const edge = routeData.edges.find(e => 
                 (e.from === prevNodeId && e.to === nodeId) || 
                 (e.to === prevNodeId && e.from === nodeId)
-              );
-              
+              );              
               if (edge) {
                 stationType = edge.mode || 'default';
-                routeNumber = edge.route || '';
+                // Store route number if needed in the future
               }
             }
             
@@ -646,36 +928,16 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
               strokeColor: '#FFFFFF',
             }}
           />
-        ))}
+        ))}        {/* Route information is now displayed in the bottom-right panel */}
 
-        {/* Render info about the route */}
-        {shouldShowRoute && routeData && (
-          <InfoWindow
-            position={routeCoordinates[0]}
-            options={{
-              pixelOffset: new google.maps.Size(0, -50)
-            }}
-          >
-            <div style={{ padding: '8px', maxWidth: '200px' }}>
-              <Typography variant="subtitle1" fontWeight="bold">Route Information</Typography>
-             
-              {routeData.isPublicTransport && routeData.steps && (
-                <div>
-                  <Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>
-                    Public Transport:
-                  </Typography>
-                  {routeData.steps.map((step, idx) => (
-                    <Typography key={idx} variant="caption" display="block">
-                      {step.mode === 'metro' ? '🚇 Metro' : '🚌 Bus'} {step.route}: 
-                      {step.start} → {step.end} ({step.stops} stops)
-                    </Typography>
-                  ))}
-                </div>
-              )}
-            </div>
-          </InfoWindow>
-        )}
-      </GoogleMap>
+        {/* Render traffic layer if enabled */}
+        {showTraffic && <TrafficLayer />}
+      </GoogleMap>      {/* Route Info Panel */}
+      <RouteInfoPanel
+        routeData={routeData}
+        showPanel={showRouteInfoPanel}
+        onTogglePanel={handleToggleRouteInfoPanel}
+      />
     </Box>
   );
 };

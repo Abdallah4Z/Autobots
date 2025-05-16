@@ -20,6 +20,25 @@
   bottom: 0;
 }
 
+/* Traffic toggle button styles */
+.traffic-toggle-btn {
+  background-color: #3c78d8;
+  transition: all 0.3s ease;
+}
+
+.traffic-toggle-btn:hover {
+  background-color: #2a56a7;
+  transform: scale(1.05);
+}
+
+.traffic-toggle-btn.active {
+  background-color: #d85a3c;
+}
+
+.traffic-toggle-btn.active:hover {
+  background-color: #a7442a;
+}
+
 /* Map Controls */
 .map-controls {
   position: absolute;

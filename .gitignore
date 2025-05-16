@@ -11,31 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
 .env
 /env
 
@@ -49,5 +24,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-*.pyc
+*.txt
+*~
 *.pdf
+
+# Python bytecode - comprehensive version
+__pycache__/
+*/__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+
+# Remove specific pattern for your project structure
+/backend/src/app/api/__pycache__/
+/backend/src/app/models/__pycache__/
+/backend/src/app/services/__pycache__/
+/backend/src/app/utils/__pycache__/
