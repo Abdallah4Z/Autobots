@@ -5,6 +5,7 @@ import { Box, Typography, Paper, IconButton, Collapse } from '@mui/material';
 import { cityData } from '../pages/cityData';                          
 import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
+import FloatingHelpButton from './FloatingHelpButton';
 
 // Map styles for different times of day
 const mapStyles = {  morning: [
@@ -938,6 +939,7 @@ const TransportationMap: React.FC<TransportationMapProps> = ({
         showPanel={showRouteInfoPanel}
         onTogglePanel={handleToggleRouteInfoPanel}
       />
+      <FloatingHelpButton />
     </Box>
   );
 };

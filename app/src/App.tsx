@@ -9,6 +9,8 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ContactPage from './pages/ContactPage'
 import TransportationDashboard from './pages/TransportationDashboard'
+import FAQsPage from './pages/FAQsPage'
+
 function App() {
   return (
 
@@ -23,6 +25,7 @@ function App() {
           <Route path="/401" element={<UnauthorizedPage />} />
           <Route path="/403" element={<ForbiddenPage />} />
           <Route path="/500" element={<ServerErrorPage />} />
+          <Route path="/faqs" element={<FAQsPage />} />
           <Route path="*" element={<NotFoundPage />} />
           <Route path="/" element={<TransportationDashboard />} />
         </Routes>

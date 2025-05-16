@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Layout from '../components/Layout';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const FAQsPage: React.FC = () => {
   // FAQ data
@@ -36,6 +37,16 @@ const FAQsPage: React.FC = () => {
     }
   ];
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect to '/faqs' if the path is not exactly '/faqs'
+  React.useEffect(() => {
+    if (location.pathname.toLowerCase() !== '/faqs') {
+      navigate('/faqs', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
   // Set document title
   React.useEffect(() => {
     document.title = "FAQs - Transportation Network";
@@ -55,29 +66,8 @@ const FAQsPage: React.FC = () => {
           </Typography>
         </Box>
 
-        {/* Scrollable container for FAQs */}
-        <Box 
-          sx={{ 
-            height: '400px', 
-            overflowY: 'auto',
-            pr: 2, // Add padding right for better appearance with scrollbar
-            // Custom scrollbar styling
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: '#f1f1f1',
-              borderRadius: '10px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: '#888',
-              borderRadius: '10px',
-              '&:hover': {
-                backgroundColor: '#555',
-              },
-            },
-          }}
-        >
+        {/* Container for FAQs */}
+        <Box>
           {faqs.map((faq, index) => (
             <Accordion key={index} sx={{ mb: 2 }}>
               <AccordionSummary
