@@ -1,3 +1,5 @@
+// filepath: c:\Users\ahmed\Documents\GitHub\Autobots\app\src\components\SearchBar.tsx
+// Author: Ahmed
 import React, { useState } from 'react';
 import { TextField, Autocomplete } from '@mui/material';
 

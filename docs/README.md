@@ -15,7 +15,7 @@ The system provides tools for:
 
 ```
 backend/
-├── data/               # CSV data files
+├── data/               # json data files
 ├── src/
 │   └── app/
 │       ├── api/        # API endpoints
