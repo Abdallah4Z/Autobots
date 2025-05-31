@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Box } from '@mui/material';
 import Appbar from './Appbar';
 import Navigation from './Navigation';
-import '../styles/Layout.css';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [open, setOpen] = useState(false);

@@ -1,76 +1,116 @@
-import React from 'react';
-import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import Layout from '../components/Layout';
-import { useNavigate, useLocation } from 'react-router-dom';
-import '../styles/Layout.css';
+import React from 'react'
+import {
+  Container,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Box,
+} from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import Layout from '../components/Layout'
+import {useNavigate, useLocation} from 'react-router-dom'
 
 const FAQsPage: React.FC = () => {
   // FAQ data
   const faqs = [
     {
-      question: "How do I find the optimal route between two locations?",
-      answer: "Enter your starting point and destination in the search fields on the main dashboard. The system will automatically calculate the most efficient route based on current traffic conditions, distance, and available transportation options."
+      question: 'How do I find the optimal route between two locations?',
+      answer:
+        'Enter your starting point and destination in the search fields on the main dashboard. The system will automatically calculate the most efficient route based on current traffic conditions, distance, and available transportation options.',
     },
     {
-      question: "Can I compare different transportation methods?",
-      answer: "Yes! After entering your route, you can view various transportation options including bus, metro, walking, and mixed modes. Each option displays the estimated time, distance, and any transfers required."
+      question: 'Can I compare different transportation methods?',
+      answer:
+        'Yes! After entering your route, you can view various transportation options including bus, metro, walking, and mixed modes. Each option displays the estimated time, distance, and any transfers required.',
     },
     {
-      question: "How accurate is the travel time estimation?",
-      answer: "Our travel time estimates are based on real-time data and historical patterns. They account for average speeds, typical delays, and scheduled transportation times. However, unexpected events may affect actual travel times."
+      question: 'How accurate is the travel time estimation?',
+      answer:
+        'Our travel time estimates are based on real-time data and historical patterns. They account for average speeds, typical delays, and scheduled transportation times. However, unexpected events may affect actual travel times.',
     },
     {
-      question: "Is there an emergency routing option?",
-      answer: "Yes, our emergency routing feature provides the fastest path to hospitals, police stations, or other emergency services. Access this feature from the Emergency Routing section in the main menu."
+      question: 'Is there an emergency routing option?',
+      answer:
+        'Yes, our emergency routing feature provides the fastest path to hospitals, police stations, or other emergency services. Access this feature from the Emergency Routing section in the main menu.',
     },
     {
-      question: "How do I report an issue with a suggested route?",
-      answer: "You can report issues through the Contact page. Please provide specific details about the route, the problem encountered, and any alternative routes you may have taken."
+      question: 'How do I report an issue with a suggested route?',
+      answer:
+        'You can report issues through the Contact page. Please provide specific details about the route, the problem encountered, and any alternative routes you may have taken.',
     },
     {
-      question: "Can I save my frequent routes?",
-      answer: "Currently, this feature is under development. In the future release, you will be able to save your favorite routes for quick access."
+      question: 'Can I save my frequent routes?',
+      answer:
+        'Currently, this feature is under development. In the future release, you will be able to save your favorite routes for quick access.',
     },
     {
-      question: "Does the system account for public transportation schedules?",
-      answer: "Yes, our route planning incorporates the schedules of buses and metro lines. The system considers waiting times between connections when calculating total travel time."
-    }
-  ];
+      question: 'Does the system account for public transportation schedules?',
+      answer:
+        'Yes, our route planning incorporates the schedules of buses and metro lines. The system considers waiting times between connections when calculating total travel time.',
+    },
+  ]
 
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const location = useLocation()
 
   // Redirect to '/faqs' if the path is not exactly '/faqs'
   React.useEffect(() => {
     if (location.pathname.toLowerCase() !== '/faqs') {
-      navigate('/faqs', { replace: true });
+      navigate('/faqs', {replace: true})
     }
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate])
 
   // Set document title
   React.useEffect(() => {
-    document.title = "FAQs - Transportation Network";
-  }, []);
-
+    document.title = 'FAQs - Transportation Network'
+  }, [])
   return (
     <Layout>
-      <Container maxWidth="md" className="faqs-page-container">
-        <Typography variant="h3" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
+      <Container
+        maxWidth="md"
+        sx={{
+          height: '100vh',
+          overflow: 'auto',
+          py: 3,
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#c1c1c1',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: '#a8a8a8',
+          },
+        }}
+      >
+        <Typography
+          variant="h3"
+          component="h1"
+          gutterBottom
+          align="center"
+          sx={{mb: 4}}
+        >
           Frequently Asked Questions
         </Typography>
-        
-        <Box sx={{ mb: 6 }}>
+
+        <Box sx={{mb: 6}}>
           <Typography variant="body1" paragraph>
-            Find answers to common questions about our transportation network optimization system. 
-            If you don't see your question here, feel free to reach out through our Contact page.
+            Find answers to common questions about our transportation network
+            optimization system. If you don't see your question here, feel free
+            to reach out through our Contact page.
           </Typography>
         </Box>
 
         {/* Container for FAQs */}
-        <Box className="faqs-accordion-list">
+        <Box sx={{pb: 4}}>
           {faqs.map((faq, index) => (
-            <Accordion key={index} sx={{ mb: 2 }}>
+            <Accordion key={index} sx={{mb: 2}}>
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 aria-controls={`panel${index}-content`}
@@ -86,7 +126,7 @@ const FAQsPage: React.FC = () => {
         </Box>
       </Container>
     </Layout>
-  );
-};
+  )
+}
 
-export default FAQsPage;
+export default FAQsPage
