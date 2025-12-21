@@ -81,6 +81,20 @@ def get_audio(filename):
     Retrieve generated audio file
     """
     try:
+        # Validate filename to prevent path traversal attacks
+        if not filename or '..' in filename or '/' in filename or '\\' in filename:
+            return jsonify({
+                "success": False,
+                "error": "Invalid filename"
+            }), 400
+        
+        # Only allow mp3 files
+        if not filename.endswith('.mp3'):
+            return jsonify({
+                "success": False,
+                "error": "Invalid file type"
+            }), 400
+        
         filepath = tts_service.get_audio_path(filename)
         
         if not os.path.exists(filepath):
@@ -112,6 +126,13 @@ def cleanup():
     try:
         data = request.get_json() or {}
         max_age_hours = data.get('max_age_hours', 24)
+        
+        # Validate max_age_hours
+        if not isinstance(max_age_hours, (int, float)) or max_age_hours <= 0:
+            return jsonify({
+                "success": False,
+                "error": "max_age_hours must be a positive number"
+            }), 400
         
         deleted_count = tts_service.cleanup_old_files(max_age_hours)
         

@@ -12,6 +12,16 @@ class TTSService:
     
     def __init__(self):
         self.output_dir = Config.AUDIO_OUTPUT_DIR
+        # Validate and create output directory early to fail fast
+        try:
+            os.makedirs(self.output_dir, exist_ok=True)
+            # Test write permission
+            test_file = os.path.join(self.output_dir, '.write_test')
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.remove(test_file)
+        except (OSError, IOError) as e:
+            raise RuntimeError(f"Cannot initialize TTS service: {str(e)}")
         
     def synthesize(self, text, language=None, speed=None):
         """

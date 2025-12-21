@@ -5,7 +5,8 @@ import pytest
 import sys
 import os
 
-# Add parent directory to path
+# Add parent directory to path for test imports
+# Note: In production, use proper package installation instead
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src import create_app
@@ -66,6 +67,30 @@ def test_get_nonexistent_audio(client):
     """Test retrieving non-existent audio file"""
     response = client.get('/api/tts/audio/nonexistent.mp3')
     assert response.status_code == 404
+
+def test_get_audio_path_traversal(client):
+    """Test path traversal attack prevention"""
+    response = client.get('/api/tts/audio/../../../etc/passwd')
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data['success'] is False
+    assert 'Invalid' in data['error']
+
+def test_get_audio_invalid_file_type(client):
+    """Test invalid file type rejection"""
+    response = client.get('/api/tts/audio/test.txt')
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data['success'] is False
+
+def test_cleanup_invalid_hours(client):
+    """Test cleanup with invalid max_age_hours"""
+    response = client.post('/api/tts/cleanup',
+                          json={'max_age_hours': -1})
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data['success'] is False
+    assert 'positive' in data['error']
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
