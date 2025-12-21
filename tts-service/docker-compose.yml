@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  tts-service:
+    build: .
+    container_name: tts-service
+    ports:
+      - "5001:5001"
+    environment:
+      - TTS_PORT=5001
+      - TTS_HOST=0.0.0.0
+      - TTS_DEBUG=false
+    volumes:
+      - ./audio_output:/app/audio_output
+    restart: unless-stopped

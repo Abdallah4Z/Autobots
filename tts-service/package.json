@@ -1,0 +1,23 @@
+{
+  "name": "tts-service",
+  "version": "1.0.0",
+  "description": "Text-to-Speech microservice for Autobots Transportation Network Analysis System",
+  "main": "src/app.py",
+  "scripts": {
+    "start": "python src/app.py",
+    "test": "pytest tests/"
+  },
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "microservice",
+    "transportation",
+    "autobots"
+  ],
+  "author": "Autobots Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Abdallah4Z/Autobots"
+  }
+}
