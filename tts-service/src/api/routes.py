@@ -2,7 +2,7 @@
 API routes for TTS Service
 """
 from flask import Blueprint, request, jsonify, send_file
-from services.tts_service import TTSService
+from src.services.tts_service import TTSService
 from config.settings import Config
 import os
 

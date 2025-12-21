@@ -76,7 +76,8 @@ class TTSService:
         for filename in os.listdir(self.output_dir):
             filepath = os.path.join(self.output_dir, filename)
             if os.path.isfile(filepath):
-                file_age = now - datetime.fromtimestamp(os.path.getmtime(filepath))
+                file_modified = datetime.utcfromtimestamp(os.path.getmtime(filepath))
+                file_age = now - file_modified
                 if file_age.total_seconds() > max_age_hours * 3600:
                     try:
                         os.remove(filepath)

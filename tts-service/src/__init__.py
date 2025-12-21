@@ -17,7 +17,7 @@ def create_app(config_class=Config):
     config_class.init_app(app)
     
     # Register blueprints
-    from api.routes import api_bp
+    from src.api.routes import api_bp
     app.register_blueprint(api_bp, url_prefix='/api/tts')
     
     return app
